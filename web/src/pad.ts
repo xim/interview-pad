@@ -21,8 +21,6 @@ export const LANGS = {
 export type Lang = keyof typeof LANGS;
 
 const COLORS = ['#e06c75', '#98c379', '#e5c07b', '#61afef', '#c678dd', '#56b6c2', '#d19a66'];
-// derived locally rather than taken from awareness, so remote state never reaches the stylesheet unescaped
-const colorOf = (clientId: number) => COLORS[clientId % COLORS.length];
 const cssString = (s: string) => `"${s.replace(/["\\\n\r]/g, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"`;
 
 type User = { name: string };
@@ -98,7 +96,14 @@ export function startPad(me: Me) {
 
   const style = document.head.appendChild(document.createElement('style'));
   const renderPeers = () => {
-    const users = [...awareness.getStates()].filter(([, s]) => s.user).map(([id, s]) => [id, s.user as User] as const);
+    const users = [...awareness.getStates()]
+      .filter(([, s]) => s.user)
+      .map(([id, s]) => [id, s.user as User] as const)
+      .sort(([a], [b]) => a - b);
+    // by position among connected clients, so all clients agree and colors don't collide;
+    // derived locally so remote awareness state never reaches the stylesheet unescaped
+    const colors = new Map(users.map(([id], i) => [id, COLORS[i % COLORS.length]]));
+    const colorOf = (id: number) => colors.get(id)!;
     style.textContent = users
       .map(([id, u]) => `
         .yRemoteSelection-${id} { background-color: ${colorOf(id)}40; }

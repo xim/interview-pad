@@ -22,6 +22,7 @@ if (!url) {
 const browser = await puppeteer.launch({
   executablePath: process.env.CHROME ?? '/usr/bin/google-chrome',
   headless: !process.env.HEADFUL,
+  defaultViewport: { width: 1280, height: 720 },
 });
 
 async function open(label) {
