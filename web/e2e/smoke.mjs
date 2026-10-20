@@ -1,8 +1,24 @@
-// Two-browser smoke test against a running server: node e2e/smoke.mjs [url]
+// Two-browser smoke test: node e2e/smoke.mjs [url]
+// Without a url, starts a fresh server from ../server (serving ./dist, so build first).
+import { spawn } from 'node:child_process';
 import puppeteer from 'puppeteer-core';
 
-const url = process.argv[2] ?? 'http://localhost:8765/';
 const password = process.env.PASSWORD ?? 'pw';
+let server;
+let url = process.argv[2];
+if (!url) {
+  const port = 20000 + Math.floor(Math.random() * 10000);
+  url = `http://localhost:${port}/`;
+  server = spawn('uv', ['run', 'uvicorn', 'app:create_app', '--factory', '--port', String(port)], {
+    cwd: new URL('../../server', import.meta.url),
+    env: { ...process.env, INTERVIEWER_PASSWORD: password },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  await new Promise((resolve, reject) => {
+    server.stderr.on('data', (d) => d.includes('Application startup complete') && resolve());
+    server.on('exit', reject);
+  });
+}
 const browser = await puppeteer.launch({
   executablePath: process.env.CHROME ?? '/usr/bin/google-chrome',
   headless: !process.env.HEADFUL,
@@ -116,6 +132,8 @@ try {
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
   step('cpp exit code shared');
+  await runCase(cand, iv, 'c', null, 'Hello from C\n');
+  await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable]');
 
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
 } catch (e) {
@@ -126,4 +144,5 @@ try {
   throw e;
 } finally {
   await browser.close();
+  server?.kill();
 }

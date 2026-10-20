@@ -1,7 +1,7 @@
 # interview-pad
 
 Minimal real-time collaborative code editor for interviews.
-Shared editor with live cursors; C++, Python and TypeScript run **in the browser** (WASM) of whoever clicks Run,
+Shared editor with live cursors; C, C++, Python and TypeScript run **in the browser** (WASM) of whoever clicks Run,
 and the output is shared. Python backend; one instance per interview; in-memory only.
 
 Flow: the interviewer logs in with a password; the candidate joins with a name and waits until the interviewer admits them.
@@ -50,9 +50,9 @@ Tests:
 ```sh
 cd server && uv run pytest
 cd web && npm run check                 # type-check
-# end-to-end (puppeteer + system Chrome; CHROME=/path/to/chrome to override):
-cd web && npm run build && (cd ../server && INTERVIEWER_PASSWORD=pw uv run uvicorn app:create_app --factory --port 8765) &
-node e2e/smoke.mjs http://localhost:8765/
+# end-to-end: starts a fresh server, drives two headless Chrome sessions (CHROME=/path/to/chrome to override)
+cd web && npm run build && npm run e2e
+node e2e/smoke.mjs http://localhost:8080/pad/   # or against a running instance (PASSWORD=..., default pw)
 ```
 
 ## Limitations
