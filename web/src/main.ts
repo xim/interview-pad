@@ -42,10 +42,18 @@ async function enterPad(me: Me) {
   if (me.role === 'interviewer') pollRequests();
 }
 
+let shownRequests = '';
+
 async function pollRequests() {
-  const box = $('requests');
+  setTimeout(pollRequests, POLL_MS);
   const pending = await api<Pending[]>('pending').catch(() => [] as Pending[]);
-  box.replaceChildren(...pending.map(({ id, name }) => {
+  const ids = pending.map((p) => p.id).join();
+  if (ids === shownRequests) return;
+  shownRequests = ids;
+  document.title = pending.length ? `(${pending.length}) Join request — interview-pad` : 'interview-pad';
+  const dialog = $<HTMLDialogElement>('requests-dialog');
+  if (!pending.length) return dialog.close();
+  $('requests').replaceChildren(...pending.map(({ id, name }) => {
     const row = document.createElement('div');
     row.className = 'request';
     const label = document.createElement('span');
@@ -53,8 +61,10 @@ async function pollRequests() {
     const button = (text: string, admit: boolean) => {
       const b = document.createElement('button');
       b.textContent = text;
+      if (!admit) b.className = 'secondary';
       b.onclick = async () => {
         row.remove();
+        if (!$('requests').children.length) dialog.close();
         await api(`admit/${encodeURIComponent(id)}`, { admit });
       };
       return b;
@@ -62,7 +72,7 @@ async function pollRequests() {
     row.append(label, button('Admit', true), button('Deny', false));
     return row;
   }));
-  setTimeout(pollRequests, POLL_MS);
+  if (!dialog.open) dialog.showModal();
 }
 
 function onSubmit(formId: string, submit: (data: FormData) => Promise<Me>) {

@@ -82,9 +82,11 @@ try {
   await cand.waitForSelector('#waiting:not([hidden])');
   step('candidate waiting');
 
-  await iv.waitForSelector('.request button');
+  await iv.waitForSelector('#requests-dialog[open] .request button');
+  if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT.replace('.png', '-admit.png') });
   await iv.click('.request button');
   await cand.waitForSelector('#pad:not([hidden])');
+  await iv.waitForSelector('#requests-dialog:not([open])');
   step('candidate admitted');
 
   await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 2);

@@ -54,6 +54,11 @@ button {
   cursor: pointer;
 }
 
+button.secondary {
+  background: #3c3c3c;
+  border-color: #3c3c3c;
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: default;
@@ -68,16 +73,28 @@ summary {
   color: var(--error);
 }
 
-#requests:empty {
-  display: none;
+dialog {
+  min-width: 22rem;
+  background: #252526;
+  color: var(--fg);
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+dialog h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
 }
 
 .request {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.4rem 1rem;
-  background: #3a3d41;
+  padding: 0.4rem 0;
 }
 
 .request span {
