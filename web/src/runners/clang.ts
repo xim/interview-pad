@@ -13,7 +13,7 @@ function getCompiler() {
 
 export const clangRunner = (lang: 'c' | 'cpp'): Runner => ({
   preload: () => getCompiler().postMessage({ preload: true }),
-  async run(model, ctx, flags) {
+  async run(model, ctx, { flags, args, stdin }) {
     let result;
     try {
       result = await runWorker<{ wasm?: Uint8Array }>(getCompiler(), { lang, src: model.getValue(), flags }, ctx, true);
@@ -26,6 +26,6 @@ export const clangRunner = (lang: 'c' | 'cpp'): Runner => ({
       return result.code;
     }
     ctx.start();
-    return (await runWorker(new WasiWorker(), result.wasm, ctx)).code;
+    return (await runWorker(new WasiWorker(), { wasm: result.wasm, args, stdin }, ctx)).code;
   },
 });

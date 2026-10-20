@@ -6,7 +6,8 @@ const post = (text: string) => postMessage({ type: 'out', text });
 const HARNESS = `
 import sys, traceback
 
-def run(src):
+def run(src, argv):
+    sys.argv = ["main.py", *argv]
     try:
         exec(compile(src, "main.py", "exec"), {"__name__": "__main__"})
     except SystemExit as e:
@@ -25,7 +26,7 @@ def run(src):
 run
 `;
 
-let ready: Promise<(src: string) => number> | undefined;
+let ready: Promise<{ py: PyodideAPI; run: (src: string, args: string[]) => number }> | undefined;
 
 async function init(indexURL: string) {
   const { loadPyodide } = await import(/* @vite-ignore */ `${indexURL}pyodide.mjs`);
@@ -39,8 +40,7 @@ async function init(indexURL: string) {
   };
   py.setStdout(writer);
   py.setStderr(writer);
-  py.setStdin({ error: true });
-  return py.runPython(HARNESS);
+  return { py, run: py.runPython(HARNESS) };
 }
 
 onmessage = async ({ data }) => {
@@ -49,13 +49,21 @@ onmessage = async ({ data }) => {
     return;
   }
   postMessage({ type: 'status', text: 'Loading Python' });
-  let run;
+  let py, run;
   try {
-    run = await ready!;
+    ({ py, run } = await ready!);
   } catch (e) {
     post(`Failed to load Python: ${e}\n`);
     return postMessage({ type: 'exit', code: 1 });
   }
+  let stdin: string | undefined = data.stdin;
+  py.setStdin({
+    stdin: () => {
+      const s = stdin;
+      stdin = undefined;
+      return s;
+    },
+  });
   postMessage({ type: 'start' });
-  postMessage({ type: 'exit', code: run(data) });
+  postMessage({ type: 'exit', code: run(data.src, data.args) });
 };

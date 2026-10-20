@@ -7,8 +7,11 @@ const output = () => {
   return new ConsoleStdout((bytes) => postMessage({ type: 'out', text: decoder.decode(bytes, { stream: true }) }));
 };
 
-onmessage = async ({ data: wasm }: MessageEvent<Uint8Array<ArrayBuffer>>) => {
-  const wasi = new WASI(['main'], [], [new OpenFile(new File([])), output(), output()]);
+type Message = { wasm: Uint8Array<ArrayBuffer>; args: string[]; stdin: string };
+
+onmessage = async ({ data: { wasm, args, stdin } }: MessageEvent<Message>) => {
+  const stdinFile = new OpenFile(new File(new TextEncoder().encode(stdin)));
+  const wasi = new WASI(['main', ...args], [], [stdinFile, output(), output()]);
   const instance = await WebAssembly.instantiate(await WebAssembly.compile(wasm), { wasi_snapshot_preview1: wasi.wasiImport });
   let code;
   try {

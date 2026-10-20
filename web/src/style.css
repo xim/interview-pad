@@ -90,6 +90,31 @@ dialog h2 {
   font-size: 1.1rem;
 }
 
+dialog small {
+  color: var(--muted);
+  font-weight: normal;
+}
+
+#input-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.8rem;
+}
+
+#input-dialog textarea, #args {
+  font: 13px monospace;
+  padding: 0.3rem;
+  background: #1e1e1e;
+  color: var(--fg);
+  border: 1px solid #3c3c3c;
+}
+
+#input-dialog form {
+  justify-content: flex-end;
+  margin: 0;
+}
+
 .request {
   display: flex;
   gap: 0.5rem;

@@ -14,9 +14,9 @@ function getWorker() {
 
 export const pythonRunner: Runner = {
   preload: getWorker,
-  async run(model, ctx) {
+  async run(model, ctx, { args, stdin }) {
     try {
-      return (await runWorker(getWorker(), model.getValue(), ctx, true)).code;
+      return (await runWorker(getWorker(), { src: model.getValue(), args, stdin }, ctx, true)).code;
     } catch (e) {
       worker = undefined;
       throw e;

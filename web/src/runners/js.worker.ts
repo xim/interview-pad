@@ -20,7 +20,13 @@ for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
 
 addEventListener('unhandledrejection', (e) => post(`Uncaught (in promise) ${format(e.reason)}\n`));
 
-onmessage = async ({ data: code }: MessageEvent<string>) => {
+type Message = { code: string; args: string[]; stdin: string };
+
+onmessage = async ({ data: { code, args, stdin } }: MessageEvent<Message>) => {
+  // Node-ish argv; prompt() (as in browsers) returns the next stdin line, null at EOF
+  const lines = stdin.split('\n');
+  if (lines.at(-1) === '') lines.pop();
+  Object.assign(globalThis, { process: { argv: ['node', 'main.ts', ...args] }, prompt: () => lines.shift() ?? null });
   const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
   let exitCode = 0;
   try {

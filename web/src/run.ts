@@ -19,11 +19,17 @@ export type RunContext = {
   signal: AbortSignal;
 };
 
+export type RunInput = { flags: string[]; args: string[]; stdin: string };
+
 export type Runner = {
   preload?: () => void;
   // resolves with the exit code; rejects when aborted via ctx.signal
-  run: (model: monaco.editor.ITextModel, ctx: RunContext, flags: string[]) => Promise<number>;
+  run: (model: monaco.editor.ITextModel, ctx: RunContext, input: RunInput) => Promise<number>;
 };
+
+// Whitespace-separated, with '...' / "..." grouping (no escapes).
+export const splitArgs = (s: string) =>
+  [...s.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map((m) => m[1] ?? m[2] ?? m[3]);
 
 type RunState = {
   status: 'running' | 'done';
@@ -85,6 +91,7 @@ export function setupRun(opts: {
 }) {
   const { me, doc, awareness } = opts;
   const state = doc.getMap('state');
+  const input = () => ({ args: splitArgs((state.get('args') as string) ?? ''), stdin: (state.get('stdin') as string) ?? '' });
   const output = doc.getText('output');
   const runButton = $<HTMLButtonElement>('run');
   const stopButton = $<HTMLButtonElement>('stop');
@@ -134,7 +141,7 @@ export function setupRun(opts: {
     let exitCode: number | null = null;
     try {
       const ctx = { write, status: (phase: string) => setRun({ phase }), start, signal: ctrl.signal };
-      exitCode = await RUNNERS[lang].run(opts.model(lang), ctx, opts.flags(lang).split(/\s+/).filter(Boolean));
+      exitCode = await RUNNERS[lang].run(opts.model(lang), ctx, { flags: splitArgs(opts.flags(lang)), ...input() });
     } catch (e) {
       write(`\n[${ctrl.signal.aborted ? ctrl.signal.reason : `error: ${e instanceof Error ? e.message : e}`}]\n`);
     }

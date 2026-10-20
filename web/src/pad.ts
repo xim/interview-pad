@@ -79,6 +79,19 @@ export function startPad(me: Me) {
   state.observe(applyLang);
   applyLang();
 
+  const inputDialog = $<HTMLDialogElement>('input-dialog');
+  const inputFields = { args: $<HTMLInputElement>('args'), stdin: $<HTMLTextAreaElement>('stdin') };
+  $('input').onclick = () => inputDialog.showModal();
+  for (const [key, field] of Object.entries(inputFields)) field.oninput = () => state.set(key, field.value);
+  const applyInput = () => {
+    for (const [key, field] of Object.entries(inputFields)) {
+      if (document.activeElement !== field) field.value = (state.get(key) as string) ?? '';
+    }
+    $('input').textContent = Object.keys(inputFields).some((k) => state.get(k)) ? 'Input •' : 'Input';
+  };
+  state.observe(applyInput);
+  applyInput();
+
   const vimBox = $<HTMLInputElement>('vim');
   let vim: { dispose(): void } | undefined;
   const applyVim = () => {

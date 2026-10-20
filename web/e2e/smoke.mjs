@@ -149,6 +149,16 @@ try {
   await runCase(cand, iv, 'c', null, 'Hello from C\n');
   await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable]');
 
+  await cand.click('#input');
+  await cand.type('#args', 'a "b c"');
+  await cand.type('#stdin', '3\n4\n');
+  await cand.click('#input-dialog button');
+  await iv.waitForFunction(() => document.querySelector('#input').textContent === 'Input •');
+  step('input synced');
+  await runCase(iv, cand, 'python', 'import sys; print(sys.argv[1:], sum(int(l) for l in sys.stdin))', "['a', 'b c'] 7");
+  await runCase(iv, cand, 'cpp', '#include <iostream>\nint main(int argc, char** argv) { int a, b; std::cin >> a >> b; std::cout << argc << argv[2] << a + b << "\\n"; }', '3b c7');
+  await runCase(iv, cand, 'ts', 'console.log(process.argv.slice(2), Number(prompt()) + Number(prompt()), prompt())', '["a","b c"] 7 null');
+
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
 
   iv.once('dialog', (d) => d.accept());
