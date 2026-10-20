@@ -169,7 +169,7 @@ async function start(base: string) {
       onExit: fail,
     });
     untar(new Uint8Array(tar), clangd.FS, '/usr');
-    clangd.callMain(['--header-insertion=never', '--background-index=false', '--pch-storage=memory', '-j=2']);
+    clangd.callMain(['--header-insertion=iwyu', '--background-index=false', '--pch-storage=memory', '-j=2']);
     status('');
   } catch (e) {
     status('C/C++ IntelliSense unavailable');

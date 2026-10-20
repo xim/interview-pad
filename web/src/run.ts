@@ -1,4 +1,5 @@
 import * as monaco from 'monaco-editor';
+import { renderAnsi } from './ansi';
 import type { WebsocketProvider } from 'y-websocket';
 import type * as Y from 'yjs';
 import { $, type Me } from './main';
@@ -110,7 +111,9 @@ export function setupRun(opts: {
     const lang = opts.currentLang();
     const ctrl = (abort = new AbortController());
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let started = 0;
     const start = () => {
+      started = performance.now();
       setRun({ phase: undefined });
       timer ??= setTimeout(() => ctrl.abort(`killed: timeout after ${TIMEOUT_MS / 1000} s`), TIMEOUT_MS);
     };
@@ -143,7 +146,12 @@ export function setupRun(opts: {
       const ctx = { write, status: (phase: string) => setRun({ phase }), start, signal: ctrl.signal };
       exitCode = await RUNNERS[lang].run(opts.model(lang), ctx, { flags: splitArgs(opts.flags(lang)), ...input() });
     } catch (e) {
-      write(`\n[${ctrl.signal.aborted ? ctrl.signal.reason : `error: ${e instanceof Error ? e.message : e}`}]\n`);
+      write(`\n\x1b[1;31m[${ctrl.signal.aborted ? ctrl.signal.reason : `error: ${e instanceof Error ? e.message : e}`}]\x1b[0m\n`);
+    }
+    // timer is only set once the program itself started (not on compile errors)
+    if (timer && exitCode !== null) {
+      const color = exitCode ? '\x1b[1;31m' : '\x1b[32m';
+      write(`${color}Program exited with code ${exitCode}\x1b[0m \x1b[2m(${Math.round(performance.now() - started)} ms)\x1b[0m\n`);
     }
     clearTimeout(timer);
     clearTimeout(flushTimer);
@@ -178,7 +186,7 @@ export function setupRun(opts: {
   const pre = $('output');
   const renderOutput = () => {
     const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 4;
-    pre.textContent = output.toString();
+    renderAnsi(output.toString(), pre);
     if (atBottom) pre.scrollTop = pre.scrollHeight;
   };
   output.observe(renderOutput);

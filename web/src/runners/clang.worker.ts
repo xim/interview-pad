@@ -1,6 +1,7 @@
 import { commands, Exit } from '@yowasp/clang';
 
 import { HIDDEN_FLAGS } from './clang-flags';
+import { echo } from './echo';
 import RUNTIME from './runtime.c?raw';
 
 
@@ -39,8 +40,9 @@ onmessage = async ({ data }) => {
     const source = `main.${lang}`;
     const files: Record<string, string | Uint8Array> = { [source]: src, [`runtime.${lang}`]: RUNTIME };
     if (lang === 'cpp') files['libeh.a'] = await libeh!;
-    post(`$ ${name} ${flags.join(' ')} ${source}\n`);
-    const args = [...HIDDEN_FLAGS[lang], ...flags, ...Object.keys(files), '-o', 'main.wasm'];
+    post(echo([name, ...flags, source]));
+    // colors aren't on by default since this isn't a terminal; the output pane renders ANSI
+    const args = ['-fcolor-diagnostics', '-fansi-escape-codes', ...HIDDEN_FLAGS[lang], ...flags, ...Object.keys(files), '-o', 'main.wasm'];
     const out = await commands[name](args, files, { stdout: write, stderr: write, fetchProgress });
     const wasm = out!['main.wasm'] as Uint8Array;
     postMessage({ type: 'exit', code: 0, wasm });

@@ -20,7 +20,7 @@ function describeCrash(e: unknown) {
   const trace = (end < 0 ? user : user.slice(0, end))
     .map((f) => `    at ${f === '__original_main' ? 'main' : f}\n`) // main(void) is renamed by the toolchain
     .join('');
-  return `\n[${summary}]\n${trace}`;
+  return `\n\x1b[1;31m[${summary}]\x1b[0m\n${trace}`;
 }
 
 const output = () => {
@@ -49,7 +49,7 @@ onmessage = async ({ data: { wasm, args, stdin } }: MessageEvent<Message>) => {
       if (exports.__cpp_exception && e instanceof WebAssembly.Exception && e.is(exports.__cpp_exception)) {
         exports.__ip_uncaught?.(e.getArg(exports.__cpp_exception, 0) as number);
         exports.__ip_flush?.();
-        postMessage({ type: 'out', text: '\n[Aborted: uncaught exception]\n' });
+        postMessage({ type: 'out', text: '\n\x1b[1;31m[Aborted: uncaught exception]\x1b[0m\n' });
         return postMessage({ type: 'exit', code: SIGABRT_EXIT });
       }
     } catch {}

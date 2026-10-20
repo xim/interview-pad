@@ -195,6 +195,17 @@ try {
     await setCode(cand, 'int main() { undeclared_fn(); }');
     await cand.waitForSelector('.squiggly-error', { timeout: 30000 });
     step('cpp diagnostics (clangd)');
+    await setCode(cand, 'int main() { fpri');
+    await cand.keyboard.down('Control');
+    await cand.keyboard.press('Space');
+    await cand.keyboard.up('Control');
+    await cand.waitForFunction(
+      () => document.querySelector('.suggest-widget .monaco-list-row.focused')?.textContent.includes('fprintf'),
+      { timeout: 30000 },
+    );
+    await cand.keyboard.press('Enter');
+    await iv.waitForFunction(() => editorText().includes('#include <cstdio>') || editorText().includes('#include <stdio.h>'));
+    step('cpp header insertion (clangd)');
   } else {
     console.log('- clangd not built, skipping its checks');
   }
@@ -205,7 +216,7 @@ try {
   await cand.keyboard.press('Enter');
   await iv.waitForFunction(() => document.querySelector('#flags').value.includes('-Werror'));
   step('flags synced');
-  await runCase(iv, cand, 'cpp', 'int main() { int unused; }', '$ clang++ -std=c++26 -Wall -Werror main.cpp');
+  await runCase(iv, cand, 'cpp', 'int main() { int unused; }', '> clang++ -std=c++26 -Wall -Werror main.cpp');
   await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[compilation failed]'));
   step('flags applied');
   await runCase(cand, iv, 'c', null, 'Hello from C\n');

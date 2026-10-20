@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor';
 import { runWorker, type Runner } from '../run';
+import { echo } from './echo';
 import JsWorker from './js.worker?worker';
 
 monaco.typescript.typescriptDefaults.setCompilerOptions({
@@ -15,6 +16,7 @@ export const tsRunner: Runner = {
     const getWorker = await monaco.typescript.getTypeScriptWorker();
     const ts = await getWorker(model.uri);
     const { outputFiles } = await ts.getEmitOutput(model.uri.toString());
+    ctx.write(echo(['main.ts', ...args]));
     ctx.start();
     return (await runWorker(new JsWorker(), { code: outputFiles[0].text, args, stdin }, ctx)).code;
   },

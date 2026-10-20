@@ -261,7 +261,7 @@ main {
   margin: 0;
   padding: 0.5rem 1rem;
   overflow: auto;
-  white-space: pre-wrap;
+  white-space: pre; /* wrapping misaligns compiler carets under source lines */
   font-size: 13px;
 }
 
@@ -313,3 +313,25 @@ main {
 #login-form input {
   flex-basis: 100%;
 }
+
+/* ANSI output (ansi.ts), tuned for the dark output pane: "black" must stay readable, e.g. clang's note: */
+.ansi-bold { font-weight: bold; }
+.ansi-faint { opacity: 0.7; }
+.ansi-italic { font-style: italic; }
+.ansi-underline { text-decoration: underline; }
+.ansi-fg-0 { color: #a6a6a6; }
+.ansi-fg-1 { color: #f14c4c; }
+.ansi-fg-2 { color: #23d18b; }
+.ansi-fg-3 { color: #e5e510; }
+.ansi-fg-4 { color: #3b8eea; }
+.ansi-fg-5 { color: #d670d6; }
+.ansi-fg-6 { color: #29b8db; }
+.ansi-fg-7 { color: #e5e5e5; }
+.ansi-fg-8 { color: #b8b8b8; }
+.ansi-fg-9 { color: #ff6b6b; }
+.ansi-fg-10 { color: #5af78e; }
+.ansi-fg-11 { color: #f4f99d; }
+.ansi-fg-12 { color: #6cb6ff; }
+.ansi-fg-13 { color: #ff92df; }
+.ansi-fg-14 { color: #6ae4ff; }
+.ansi-fg-15 { color: #ffffff; }

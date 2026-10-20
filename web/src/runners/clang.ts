@@ -1,4 +1,5 @@
 import { runWorker, type Runner } from '../run';
+import { echo } from './echo';
 import ClangWorker from './clang.worker?worker';
 import WasiWorker from './wasi.worker?worker';
 
@@ -25,9 +26,10 @@ export const clangRunner = (lang: 'c' | 'cpp'): Runner => ({
       throw e;
     }
     if (!result.wasm) {
-      ctx.write('[compilation failed]\n');
+      ctx.write('\x1b[1;31m[compilation failed]\x1b[0m\n');
       return result.code;
     }
+    ctx.write(echo(['./main', ...args]));
     ctx.start();
     return (await runWorker(new WasiWorker(), { wasm: result.wasm, args, stdin }, ctx)).code;
   },

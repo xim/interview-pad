@@ -4,7 +4,9 @@ const post = (text: string) => postMessage({ type: 'out', text });
 
 // Fresh __main__ globals per run; returns the exit code. Drops the harness frame from tracebacks.
 const HARNESS = `
-import sys, traceback
+import os, sys, traceback
+
+os.environ["FORCE_COLOR"] = "1"  # e.g. pytest/rich colors; the output pane renders ANSI
 
 def run(src, argv):
     # a real file: tracebacks show source lines, and tools like pytest can import it
@@ -20,7 +22,7 @@ def run(src, argv):
         print(e.code, file=sys.stderr)
         return 1
     except BaseException as e:
-        traceback.print_exception(type(e), e, e.__traceback__.tb_next)
+        traceback.print_exception(type(e), e, e.__traceback__.tb_next, colorize=True)
         return 1
     finally:
         sys.stdout.flush()
