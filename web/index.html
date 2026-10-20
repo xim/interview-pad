@@ -32,12 +32,20 @@
     <div id="requests"></div>
     <header id="toolbar">
       <select id="lang"></select>
+      <button id="run" title="Ctrl+Enter">Run</button>
+      <button id="stop" hidden>Stop</button>
+      <span id="run-status"></span>
       <span id="participants"></span>
       <span id="conn"></span>
       <label><input id="vim" type="checkbox"> Vim</label>
     </header>
-    <div id="editor"></div>
-    <div id="vim-status" hidden></div>
+    <main>
+      <div id="left">
+        <div id="editor"></div>
+        <div id="vim-status" hidden></div>
+      </div>
+      <pre id="output"></pre>
+    </main>
   </section>
 
   <script type="module" src="./src/main.ts"></script>

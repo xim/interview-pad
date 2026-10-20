@@ -6,6 +6,7 @@ import { MonacoBinding } from 'y-monaco';
 import { WebsocketProvider } from 'y-websocket';
 import * as Y from 'yjs';
 import { $, type Me } from './main';
+import { setupRun } from './run';
 
 self.MonacoEnvironment = {
   getWorker: (_id, label) => (label === 'typescript' || label === 'javascript' ? new TsWorker() : new EditorWorker()),
@@ -37,6 +38,7 @@ export function startPad(me: Me) {
     theme: 'vs-dark',
     automaticLayout: true,
     minimap: { enabled: false },
+    padding: { top: 16 }, // room for remote cursor labels on line 1
     fontSize: 14,
   });
   const models = {} as Record<Lang, monaco.editor.ITextModel>;
@@ -46,14 +48,21 @@ export function startPad(me: Me) {
   }
 
   const state = doc.getMap('state');
+  const currentLang = () => {
+    const lang = state.get('lang') as Lang;
+    return lang in LANGS ? lang : 'cpp';
+  };
+  const runner = setupRun({ me, doc, awareness, editor, currentLang, model: (lang) => models[lang] });
+
   const select = $<HTMLSelectElement>('lang');
   select.replaceChildren(...Object.entries(LANGS).map(([lang, l]) => new Option(l.label, lang)));
   select.onchange = () => state.set('lang', select.value);
   const applyLang = () => {
-    const lang = (state.get('lang') ?? 'cpp') as Lang;
-    if (!(lang in LANGS)) return;
+    const lang = currentLang();
     select.value = lang;
-    if (editor.getModel() !== models[lang]) editor.setModel(models[lang]);
+    if (editor.getModel() === models[lang]) return;
+    editor.setModel(models[lang]);
+    runner.preload(lang);
   };
   state.observe(applyLang);
   applyLang();

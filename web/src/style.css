@@ -93,6 +93,7 @@ summary {
   display: flex;
   gap: 0.75rem;
   flex: 1;
+  justify-content: flex-end;
 }
 
 .participant::before {
@@ -105,9 +106,37 @@ summary {
   color: var(--error);
 }
 
+main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+#left {
+  display: flex;
+  flex-direction: column;
+  flex: 3;
+  min-width: 0;
+}
+
 #editor {
   flex: 1;
   min-height: 0;
+}
+
+#output {
+  flex: 2;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  border-left: 1px solid #3c3c3c;
+  font-size: 13px;
+}
+
+#run-status {
+  color: var(--muted);
 }
 
 .yRemoteSelectionHead {
