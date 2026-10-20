@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>interview-pad</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <section id="landing" hidden>
+    <h1>interview-pad</h1>
+    <form id="join-form">
+      <input name="name" placeholder="Your name" maxlength="40" required autofocus>
+      <button>Join</button>
+    </form>
+    <details>
+      <summary>Interviewer login</summary>
+      <form id="login-form">
+        <input name="password" type="password" placeholder="Password" required>
+        <button>Log in</button>
+      </form>
+    </details>
+    <p id="landing-error" class="error"></p>
+  </section>
+
+  <section id="waiting" hidden>
+    <p id="waiting-text"></p>
+  </section>
+
+  <section id="pad" hidden>
+    <div id="requests"></div>
+    <p id="pad-placeholder"></p>
+  </section>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>

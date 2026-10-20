@@ -3,6 +3,7 @@ import os
 import secrets
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from pycrdt import Map, Text
 from pycrdt.websocket import ASGIServer, WebsocketServer
@@ -10,13 +11,15 @@ from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import JSONResponse, Response
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import Mount, Route, WebSocketRoute
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket
 
 log = logging.getLogger("uvicorn.error")
 
 COOKIE = "session"
 MAX_NAME = 40
+STATIC_DIR = os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "web" / "dist")
 ROOM = "/ws/pad"  # y-websocket connects to <url>/<room>; pycrdt-websocket names rooms by path
 
 TEMPLATES = {
@@ -151,6 +154,7 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
             Route("/api/pending", pending),
             Route("/api/admit/{id}", admit, methods=["POST"]),
             WebSocketRoute(ROOM, ws),
+            Mount("/", StaticFiles(directory=STATIC_DIR, html=True, check_dir=False)),
         ],
         lifespan=lifespan,
     )

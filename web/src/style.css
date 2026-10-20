@@ -1,0 +1,76 @@
+:root {
+  color-scheme: dark;
+  --bg: #1e1e1e;
+  --fg: #d4d4d4;
+  --muted: #8a8a8a;
+  --accent: #0e639c;
+  --error: #f48771;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#landing, #waiting {
+  max-width: 24rem;
+  margin: 15vh auto 0;
+  padding: 0 1rem;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+input {
+  flex: 1;
+}
+
+input, button, select {
+  font: inherit;
+  padding: 0.3rem 0.6rem;
+  background: #2d2d2d;
+  color: var(--fg);
+  border: 1px solid #3c3c3c;
+  border-radius: 3px;
+}
+
+button {
+  background: var(--accent);
+  border-color: var(--accent);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.error {
+  color: var(--error);
+}
+
+#requests:empty {
+  display: none;
+}
+
+.request {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  background: #3a3d41;
+}
+
+.request span {
+  flex: 1;
+}
