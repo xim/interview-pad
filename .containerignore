@@ -1,0 +1,7 @@
+.git
+proto
+**/node_modules
+**/.venv
+**/__pycache__
+web/dist
+web/public/pyodide
