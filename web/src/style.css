@@ -179,3 +179,11 @@ main {
   border: none;
   background: none;
 }
+
+#login-form {
+  flex-wrap: wrap;
+}
+
+#login-form input {
+  flex-basis: 100%;
+}

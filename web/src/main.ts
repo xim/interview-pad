@@ -77,6 +77,6 @@ function onSubmit(formId: string, submit: (data: FormData) => Promise<Me>) {
 }
 
 onSubmit('join-form', (d) => api<Me>('join', { name: d.get('name') }));
-onSubmit('login-form', (d) => api<Me>('login', { password: d.get('password') }));
+onSubmit('login-form', (d) => api<Me>('login', { name: d.get('name'), password: d.get('password') }));
 
 api<Me>('me').then(route, () => show('landing'));

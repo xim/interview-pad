@@ -27,6 +27,16 @@ def test_login(app):
     assert c.get("/api/me").json() == {"name": "Interviewer", "role": "interviewer", "status": "admitted"}
 
 
+@pytest.mark.parametrize("name, expected", [(" Grace ", "Grace"), ("", "Interviewer"), (None, "Interviewer")])
+def test_login_name(app, name, expected):
+    r = TestClient(app).post("/api/login", json={"password": "pw", "name": name})
+    assert r.json()["name"] == expected
+
+
+def test_login_name_too_long(app):
+    assert TestClient(app).post("/api/login", json={"password": "pw", "name": "x" * 41}).status_code == 400
+
+
 @pytest.mark.parametrize("body", [{}, {"password": 1}, [], "x"])
 def test_login_bad_body(app, body):
     assert TestClient(app).post("/api/login", json=body).status_code in (400, 401)

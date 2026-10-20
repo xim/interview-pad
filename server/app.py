@@ -118,18 +118,22 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
     def me_json(s: Session) -> dict:
         return {"name": s.name, "role": s.role, "status": s.status}
 
-    async def login(request: Request) -> Response:
-        given = (await json_body(request)).get("password")
-        if not isinstance(given, str) or not secrets.compare_digest(given.encode(), password.encode()):
-            raise HTTPException(401, "wrong password")
-        return start_session(Session("Interviewer", "interviewer", "admitted"))
-
-    async def join(request: Request) -> Response:
-        name = (await json_body(request)).get("name")
-        name = name.strip() if isinstance(name, str) else ""
+    def parse_name(body: dict, default: str | None = None) -> str:
+        name = body.get("name")
+        name = (name.strip() if isinstance(name, str) else "") or default or ""
         if not 1 <= len(name) <= MAX_NAME:
             raise HTTPException(400, f"name must be 1-{MAX_NAME} characters")
-        return start_session(Session(name, "candidate", "pending"))
+        return name
+
+    async def login(request: Request) -> Response:
+        body = await json_body(request)
+        given = body.get("password")
+        if not isinstance(given, str) or not secrets.compare_digest(given.encode(), password.encode()):
+            raise HTTPException(401, "wrong password")
+        return start_session(Session(parse_name(body, "Interviewer"), "interviewer", "admitted"))
+
+    async def join(request: Request) -> Response:
+        return start_session(Session(parse_name(await json_body(request)), "candidate", "pending"))
 
     async def me(request: Request) -> Response:
         s = current(request)

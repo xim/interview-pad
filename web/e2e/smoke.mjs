@@ -70,7 +70,8 @@ const pages = [];
 try {
   const iv = await open('interviewer');
   await iv.click('summary');
-  await iv.type('#login-form input', password);
+  await iv.type('#login-form input[name=name]', 'Grace');
+  await iv.type('#login-form input[name=password]', password);
   await iv.click('#login-form button');
   await iv.waitForSelector('#pad:not([hidden])');
   step('interviewer logged in');
