@@ -108,7 +108,7 @@ export function startPad(me: Me) {
       .map(([id, u]) => `
         .yRemoteSelection-${id} { background-color: ${colorOf(id)}40; }
         .yRemoteSelectionHead-${id} { border-left: 2px solid ${colorOf(id)}; }
-        .yRemoteSelectionHead-${id}::after { content: ${cssString(u.name)}; background: ${colorOf(id)}; }`)
+        .yRemoteSelectionHead-${id}::after { content: ${cssString(u.name)}; background: ${colorOf(id)}99; }`)
       .join('');
     $('participants').replaceChildren(...users.map(([id, u]) => {
       const span = document.createElement('span');
