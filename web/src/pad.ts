@@ -13,9 +13,17 @@ self.MonacoEnvironment = {
   getWorker: (_id, label) => (label === 'typescript' || label === 'javascript' ? new TsWorker() : new EditorWorker()),
 };
 
+// WASM doesn't fault on null/out-of-bounds accesses; these turn many such bugs into traps
+const COMMON_FLAGS = '-O2 -Wall -Wextra -fsanitize=undefined -fsanitize-trap=undefined';
+
 export const LANGS = {
-  c: { label: 'C', monaco: 'c', file: 'main.c', flags: '-std=c2y -O2 -Wall -Wextra' },
-  cpp: { label: 'C++', monaco: 'cpp', file: 'main.cpp', flags: '-std=c++26 -O2 -Wall -Wextra' },
+  c: { label: 'C', monaco: 'c', file: 'main.c', flags: `-std=c2y ${COMMON_FLAGS}` },
+  cpp: {
+    label: 'C++',
+    monaco: 'cpp',
+    file: 'main.cpp',
+    flags: `-std=c++26 ${COMMON_FLAGS} -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST`,
+  },
   python: { label: 'Python', monaco: 'python', file: 'main.py' },
   ts: { label: 'TypeScript', monaco: 'typescript', file: 'main.ts' },
 } as const;

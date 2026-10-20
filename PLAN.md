@@ -184,7 +184,5 @@ Recommend `mod_deflate` for `application/wasm` (105 → 27 MB).
 Answered: argv + stdin (up front, shared, Input tab) ✓; shared flags ✓; End interview ✓;
 login rate limiting and server-enforced names: no (YAGNI).
 
-- Make UB-catching flags the C/C++ default (`-fsanitize=undefined -fsanitize-trap=undefined`,
-  `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST`)? Traps only say "unreachable".
-- Push join requests to the interviewer over the existing Yjs socket instead of 1 s polling?
+UB-catching default flags ✓. Pushing join requests over the Yjs socket: no (candidates must poll anyway).
 - Python packages (Pyodide ships ~357, e.g. pyyaml, numpy): self-host a chosen few?

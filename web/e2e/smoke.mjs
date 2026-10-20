@@ -137,6 +137,7 @@ try {
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
   step('cpp exit code shared');
+  await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v(3); return v[1000]; }', 'libc++ hardening');
 
   await cand.click('#flags', { count: 3 });
   await cand.keyboard.type('-std=c++26 -Wall -Werror');
@@ -147,7 +148,8 @@ try {
   await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[compilation failed]'));
   step('flags applied');
   await runCase(cand, iv, 'c', null, 'Hello from C\n');
-  await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable]');
+  await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable: abort(), or a UB sanitizer');
+  await runCase(cand, iv, 'c', '#include <stdio.h>\nint main(int argc, char** argv) { int* p = argc > 5 ? &argc : 0; printf("%d", *p); }', 'UB sanitizer');
 
   await cand.click('.tab[data-tab=input]');
   await cand.type('#args', 'a "b c"');

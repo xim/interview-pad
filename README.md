@@ -61,8 +61,8 @@ node e2e/smoke.mjs http://localhost:8080/pad/   # or against a running instance 
 - stdin and arguments are set up front in the shared Input tab; there is no interactive stdin.
   TS gets `process.argv` and `prompt()` (next stdin line, `null` at EOF).
 - C/C++: WASM has no memory protection inside its linear memory, so null dereferences and out-of-bounds
-  accesses don't crash. `-fsanitize=undefined -fsanitize-trap=undefined` and
-  `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST` make many of them trap. No ASan (no runtime).
+  accesses don't fault by themselves. The default flags enable UBSan in trap mode and (C++) libc++ hardening,
+  which catch many of them, but a trap carries no details. No ASan (no runtime).
 - C++: exceptions are not supported (no libunwind in the WASM sysroot); `throw` reports the type and aborts.
 - TS/JS: the program ends when the module finishes evaluating; pending timers are dropped.
 - Run timeout: 10 s of execution (runtime download and compile time don't count). Output is capped at 64 KB.

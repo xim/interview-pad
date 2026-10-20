@@ -17,8 +17,9 @@ onmessage = async ({ data: { wasm, args, stdin } }: MessageEvent<Message>) => {
   try {
     code = wasi.start(instance as { exports: { memory: WebAssembly.Memory; _start: () => unknown } });
   } catch (e) {
-    // abort() and other traps surface as a RuntimeError such as "unreachable"
-    postMessage({ type: 'out', text: `\n[${e}]\n` });
+    // abort(), UBSan (trap mode) and libc++ hardening checks all surface as this, without details
+    const hint = String(e).includes('unreachable') ? ': abort(), or a UB sanitizer / libc++ hardening check failed' : '';
+    postMessage({ type: 'out', text: `\n[${e}${hint}]\n` });
     code = SIGABRT_EXIT;
   }
   postMessage({ type: 'exit', code });
