@@ -39,7 +39,13 @@ const RUNNERS: Record<Lang, Runner> = { cpp: cppRunner, python: pythonRunner, ts
 
 // Run in a worker speaking {type: 'out', text} / {type: 'status', text} / {type: 'start'} / {type: 'exit', code}.
 // The worker is terminated on abort or error, and after exit unless keepAlive.
-export function runWorker(worker: Worker, message: unknown, ctx: RunContext, keepAlive = false): Promise<number> {
+// Resolves with the exit message, so workers can return more than the code.
+export function runWorker<T = {}>(
+  worker: Worker,
+  message: unknown,
+  ctx: RunContext,
+  keepAlive = false,
+): Promise<{ code: number } & T> {
   return new Promise((resolve, reject) => {
     const done = (terminate: boolean) => {
       if (terminate) worker.terminate();
@@ -57,7 +63,7 @@ export function runWorker(worker: Worker, message: unknown, ctx: RunContext, kee
       else if (data.type === 'start') ctx.start();
       else if (data.type === 'exit') {
         done(!keepAlive);
-        resolve(data.code);
+        resolve(data);
       }
     };
     worker.onerror = (e) => {

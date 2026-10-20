@@ -11,11 +11,12 @@ const browser = await puppeteer.launch({
 async function open(label) {
   const page = await (await browser.createBrowserContext()).newPage();
   page.on('pageerror', (e) => console.log(`[${label}] pageerror:`, e.message));
-  page.on('console', (m) => m.type() === 'error' && !m.text().includes('401') && console.log(`[${label}] console:`, m.text()));
+  page.on('console', (m) => !m.text().includes('401') && !m.text().includes('[vite]') && console.log(`[${label}] console.${m.type()}:`, m.text()));
   await page.evaluateOnNewDocument(() => {
     window.editorText = () => document.querySelector('.view-lines')?.textContent.replace(/\u00a0/g, ' ') ?? '';
   });
   await page.goto(url);
+  pages.push([label, page]);
   return page;
 }
 
@@ -48,6 +49,7 @@ function step(name) {
   console.log('✓', name);
 }
 
+const pages = [];
 try {
   const iv = await open('interviewer');
   await iv.click('summary');
@@ -108,7 +110,20 @@ try {
   await runCase(cand, iv, 'python', 'while True: pass', '[killed: timeout after 10 s]');
   await runCase(cand, iv, 'python', 'print("recovered")', 'recovered');
 
+  await runCase(iv, cand, 'cpp', null, 'Hello from C++: [3, 1, 2]', 120000);
+  await runCase(iv, cand, 'cpp', 'int main() { return x; }', '[compilation failed]');
+  await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v; return v.at(1); }', 'uncaught exception of type std::out_of_range');
+  await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
+  await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
+  step('cpp exit code shared');
+
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
+} catch (e) {
+  for (const [label, page] of pages) {
+    const dump = await page.evaluate(() => [document.querySelector('#run-status')?.textContent, document.querySelector('#output')?.textContent]);
+    console.log(`[${label}] status: ${dump[0]}\n[${label}] output: ${dump[1]}`);
+  }
+  throw e;
 } finally {
   await browser.close();
 }

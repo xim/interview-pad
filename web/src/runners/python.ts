@@ -16,7 +16,7 @@ export const pythonRunner: Runner = {
   preload: getWorker,
   async run(model, ctx) {
     try {
-      return await runWorker(getWorker(), model.getValue(), ctx, true);
+      return (await runWorker(getWorker(), model.getValue(), ctx, true)).code;
     } catch (e) {
       worker = undefined;
       throw e;

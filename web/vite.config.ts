@@ -7,6 +7,8 @@ export default defineConfig({
   base: './',
   build: { chunkSizeWarningLimit: 4096 }, // Monaco
   worker: { format: 'es' },
+  // loads its wasm via new URL(..., import.meta.url), which pre-bundling breaks
+  optimizeDeps: { exclude: ['@yowasp/clang'] },
   resolve: {
     alias: [
       // y-monaco and monaco-vim import monaco-editor/esm/vs/... paths that monaco-editor 0.57's exports map no longer resolves

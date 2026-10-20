@@ -14,6 +14,6 @@ export const tsRunner: Runner = {
     const ts = await getWorker(model.uri);
     const { outputFiles } = await ts.getEmitOutput(model.uri.toString());
     ctx.start();
-    return runWorker(new JsWorker(), outputFiles[0].text, ctx);
+    return (await runWorker(new JsWorker(), outputFiles[0].text, ctx)).code;
   },
 };
