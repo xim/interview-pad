@@ -1,84 +1,75 @@
 # interview-pad
 
-Minimal real-time collaborative code editor for interviews.
-Shared editor with live cursors; C, C++, Python and TypeScript run **in the browser** (WASM) of whoever clicks Run,
-and the output is shared. Python backend; one instance per interview; in-memory only.
+Real-time collaborative code editor for interviews. Code runs **in the browser** (WASM) of whoever clicks Run,
+and the output is shared. Python backend, one instance per interview, in-memory only. Open items: [TODO.md](TODO.md).
 
-Flow: the interviewer logs in with a password (and optional display name); the candidate joins with a name and waits
-until the interviewer admits them. "End interview" disconnects all candidates.
+## Features
 
-Design and status: [PLAN.md](PLAN.md).
+- Interviewer logs in with a password; candidates join with a name and wait to be admitted. "End interview"
+  disconnects all candidates.
+- Shared Monaco editor with live cursors/selections; per-person Vim bindings, completion toggle and theme.
+- C, C++ (clang 22, C++26 by default, exceptions), Python 3.14 (Pyodide, numpy/pandas/pytest/… on import) and
+  TypeScript. Shared compiler flags, program arguments and stdin.
+- C/C++ catch UB at run time (UBSan, libc++ hardening) with source locations and backtraces.
+- Completion/hover: TypeScript (Monaco), Python (Jedi), C/C++ (clangd, optional build).
+- Colored, terminal-style output.
 
-## Run with podman (rootless)
+## Build and run (podman, rootless)
 
 ```sh
+tools/clangd/build.sh             # optional, for C/C++ IntelliSense; see below
 podman build -t interview-pad .
-podman run --rm -p 127.0.0.1:8080:8000 -e INTERVIEWER_PASSWORD=secret interview-pad
+podman run --rm --read-only --cap-drop=all --security-opt=no-new-privileges \
+    -p 127.0.0.1:8080:8000 -e INTERVIEWER_PASSWORD=secret interview-pad
 ```
 
-- The host port is the `-p` mapping. The internal port can be changed with `-e PORT=9000 -p 127.0.0.1:8080:9000`.
+- `-p` sets the host port; `-e PORT=9000` changes the internal one.
 - Without `INTERVIEWER_PASSWORD`, a random password is generated and logged.
-- Session cookies are `Secure`: serve over HTTPS (browsers make an exception for `localhost`).
+- Serve over HTTPS (session cookies are `Secure`; browsers make an exception for `localhost`).
 - One instance per interview: run more on different ports, each with its own password.
 
-## C/C++ IntelliSense (optional)
+### C/C++ IntelliSense (clangd)
 
-Completion, diagnostics, hover etc. for C/C++ come from clangd compiled to WASM, which isn't part of the normal build:
+`tools/clangd/build.sh` builds clangd for the browser into `web/public/clangd/`, which `podman build` then
+includes. It needs git, cmake, make and a C++ compiler; it takes ~10 min on 32 cores and keeps ~6 GB of sources and
+build files in `~/.cache/interview-pad-clangd` (reruns are incremental). Without it, C/C++ still compile and run.
 
-```sh
-tools/clangd/build.sh    # ~10 min on 32 cores, ~6 GB in ~/.cache/interview-pad-clangd; needs git, cmake, make
-podman build -t interview-pad .   # picks up web/public/clangd/
-```
-
-Without it, C/C++ still compile and run; the editor just says IntelliSense is unavailable. Cost per participant,
-on first selecting C or C++: a 58 MB download (16 MB gzipped), ~0.5 GB RAM, ~3 s and ~18 CPU-seconds to the first
-completion (~1.6 s and ~5 CPU-seconds once the browser has cached it), then idle. It needs cross-origin isolation
-(COOP/COEP headers, always sent by the server), as it uses threads.
+Per participant, on first selecting C or C++: 58 MB download (16 MB gzipped), ~0.5 GB RAM, ~3 s to the first
+completion (~1.6 s once cached).
 
 ## Behind Apache
 
 ```apache
-# needs mod_proxy, mod_proxy_http (2.4.47+ for upgrade=websocket)
+# mod_proxy, mod_proxy_http (2.4.47+ for upgrade=websocket), mod_deflate
 ProxyPass        /pad/ http://127.0.0.1:8080/ upgrade=websocket
 ProxyPassReverse /pad/ http://127.0.0.1:8080/
 # the app sets its cookie on /; scope it to the prefix so instances on one host don't clash
 ProxyPassReverseCookiePath / /pad/
 
-# the C++ compiler is ~105 MB raw, ~27 MB compressed
+# compilers and runtimes are large; compression roughly quarters them
 <Location /pad/>
     AddOutputFilterByType DEFLATE application/wasm application/x-tar text/javascript
 </Location>
 ```
 
-All app URLs are relative, so any prefix works. The trailing slash on `/pad/` matters.
+All app URLs are relative, so any prefix works; the trailing slash on `/pad/` matters.
 
 ## Development
 
 ```sh
 cd server && uv sync && INTERVIEWER_PASSWORD=pw uv run uvicorn app:create_app --factory --reload
 cd web && npm install && npm run dev    # http://localhost:5173, proxies api/ and ws/ to :8000
-```
 
-Tests:
-
-```sh
 cd server && uv run pytest
 cd web && npm run check                 # type-check
-# end-to-end: starts a fresh server, drives two headless Chrome sessions (CHROME=/path/to/chrome to override)
-cd web && npm run build && npm run e2e
-node e2e/smoke.mjs http://localhost:8080/pad/   # or against a running instance (PASSWORD=..., default pw)
+cd web && npm run build && npm run e2e  # fresh server + two headless Chrome sessions (CHROME=... to override)
 ```
 
 ## Limitations
 
-- stdin and arguments are set up front in the shared Input tab; there is no interactive stdin.
-  TS gets `process.argv` and `prompt()` (next stdin line, `null` at EOF).
-- C/C++: WASM has no memory protection inside its linear memory, so null dereferences and out-of-bounds
-  accesses don't fault by themselves. UBSan (with our own handlers, `web/src/runners/runtime.c`) and, for C++,
-  libc++ hardening are always enabled and report the problem; crashes print a backtrace. No ASan (no runtime).
-- C++: exceptions work (WASM exception handling; runtime built from llvm-project by `web/scripts/clang-eh.mjs`),
-  except ones thrown from inside the prebuilt libc++ library (e.g. `std::stoi`), which abort with a message.
-- TS/JS: the program ends when the module finishes evaluating; pending timers are dropped.
-- Python: full stdlib plus a set of bundled packages (numpy, pandas, pydantic, pytest, pyyaml, rich, …; loaded
-  on import; list in `web/scripts/pyodide.mjs`). Other third-party imports fail.
-- Run timeout: 10 s of execution (runtime download and compile time don't count). Output is capped at 64 KB.
+- stdin and arguments are given up front (Input tab); no interactive stdin. TS gets `process.argv` and `prompt()`.
+- Runs are killed after 10 s of execution (download and compile time don't count); output is capped at 64 KB.
+- C++ exceptions thrown inside the prebuilt libc++ (e.g. `std::stoi`) abort instead of being catchable.
+- No ASan. Null/out-of-bounds accesses that UBSan and hardening don't catch silently succeed (WASM memory).
+- TS: the program ends when the module finishes evaluating; pending timers are dropped.
+- Python: stdlib plus the packages listed in `web/scripts/pyodide.mjs`.
