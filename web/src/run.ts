@@ -22,7 +22,7 @@ export type RunContext = {
 export type Runner = {
   preload?: () => void;
   // resolves with the exit code; rejects when aborted via ctx.signal
-  run: (model: monaco.editor.ITextModel, ctx: RunContext) => Promise<number>;
+  run: (model: monaco.editor.ITextModel, ctx: RunContext, flags: string[]) => Promise<number>;
 };
 
 type RunState = {
@@ -81,6 +81,7 @@ export function setupRun(opts: {
   editor: monaco.editor.IStandaloneCodeEditor;
   currentLang: () => Lang;
   model: (lang: Lang) => monaco.editor.ITextModel;
+  flags: (lang: Lang) => string;
 }) {
   const { me, doc, awareness } = opts;
   const state = doc.getMap('state');
@@ -132,7 +133,8 @@ export function setupRun(opts: {
     const t0 = performance.now();
     let exitCode: number | null = null;
     try {
-      exitCode = await RUNNERS[lang].run(opts.model(lang), { write, status: (phase) => setRun({ phase }), start, signal: ctrl.signal });
+      const ctx = { write, status: (phase: string) => setRun({ phase }), start, signal: ctrl.signal };
+      exitCode = await RUNNERS[lang].run(opts.model(lang), ctx, opts.flags(lang).split(/\s+/).filter(Boolean));
     } catch (e) {
       write(`\n[${ctrl.signal.aborted ? ctrl.signal.reason : `error: ${e instanceof Error ? e.message : e}`}]\n`);
     }

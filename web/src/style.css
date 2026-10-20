@@ -30,6 +30,15 @@ input {
   flex: 1;
 }
 
+#flags {
+  flex: 0 1 18rem;
+  font-family: monospace;
+}
+
+#flags[hidden] {
+  display: none;
+}
+
 input, button, select {
   font: inherit;
   padding: 0.3rem 0.6rem;

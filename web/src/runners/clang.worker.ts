@@ -19,8 +19,6 @@ extern "C" [[noreturn]] void __cxa_throw(void*, std::type_info* type, void (*)(v
 }
 `;
 
-const FLAGS = ['-O2', '-Wall', '-Wextra'];
-
 const post = (text: string) => postMessage({ type: 'out', text });
 const decoder = new TextDecoder();
 const write = (bytes: Uint8Array | null) => bytes && post(decoder.decode(bytes, { stream: true }));
@@ -42,12 +40,12 @@ onmessage = async ({ data }) => {
   }
   postMessage({ type: 'status', text: 'Compiling' });
   try {
-    const { lang, src } = data as { lang: 'c' | 'cpp'; src: string };
-    const [clang, args, files] =
-      lang === 'c'
-        ? [commands.clang, ['-std=c2y', 'main.c'], { 'main.c': src }]
-        : [commands['clang++'], ['-std=c++26', 'main.cpp', 'stub.cpp'], { 'main.cpp': src, 'stub.cpp': STUB }];
-    const out = await clang([...FLAGS, ...args, '-o', 'main.wasm'], files, { stdout: write, stderr: write, fetchProgress });
+    const { lang, src, flags } = data as { lang: 'c' | 'cpp'; src: string; flags: string[] };
+    const [name, files] = lang === 'c' ? ['clang', { 'main.c': src }] as const : ['clang++', { 'main.cpp': src, 'stub.cpp': STUB }] as const;
+    const source = lang === 'c' ? 'main.c' : 'main.cpp';
+    post(`$ ${name} ${flags.join(' ')} ${source}\n`);
+    const args = [...flags, ...Object.keys(files), '-o', 'main.wasm'];
+    const out = await commands[name](args, files, { stdout: write, stderr: write, fetchProgress });
     const wasm = out!['main.wasm'] as Uint8Array;
     postMessage({ type: 'exit', code: 0, wasm });
   } catch (e) {

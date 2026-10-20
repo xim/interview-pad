@@ -13,8 +13,8 @@ self.MonacoEnvironment = {
 };
 
 export const LANGS = {
-  c: { label: 'C', monaco: 'c', file: 'main.c' },
-  cpp: { label: 'C++', monaco: 'cpp', file: 'main.cpp' },
+  c: { label: 'C', monaco: 'c', file: 'main.c', flags: '-std=c2y -O2 -Wall -Wextra' },
+  cpp: { label: 'C++', monaco: 'cpp', file: 'main.cpp', flags: '-std=c++26 -O2 -Wall -Wextra' },
   python: { label: 'Python', monaco: 'python', file: 'main.py' },
   ts: { label: 'TypeScript', monaco: 'typescript', file: 'main.ts' },
 } as const;
@@ -53,7 +53,18 @@ export function startPad(me: Me) {
     const lang = state.get('lang') as Lang;
     return lang in LANGS ? lang : 'cpp';
   };
-  const runner = setupRun({ me, doc, awareness, editor, currentLang, model: (lang) => models[lang] });
+  const defaultFlags = (lang: Lang) => (LANGS[lang] as { flags?: string }).flags;
+  const flags = (lang: Lang) => (state.get(`flags:${lang}`) as string | undefined) ?? defaultFlags(lang) ?? '';
+  const runner = setupRun({ me, doc, awareness, editor, currentLang, model: (lang) => models[lang], flags });
+
+  const flagsInput = $<HTMLInputElement>('flags');
+  flagsInput.onchange = () => state.set(`flags:${currentLang()}`, flagsInput.value.trim() || defaultFlags(currentLang()));
+  const applyFlags = () => {
+    const lang = currentLang();
+    flagsInput.hidden = defaultFlags(lang) === undefined;
+    if (document.activeElement !== flagsInput) flagsInput.value = flags(lang);
+  };
+  state.observe(applyFlags);
 
   const select = $<HTMLSelectElement>('lang');
   select.replaceChildren(...Object.entries(LANGS).map(([lang, l]) => new Option(l.label, lang)));
@@ -61,6 +72,7 @@ export function startPad(me: Me) {
   const applyLang = () => {
     const lang = currentLang();
     select.value = lang;
+    applyFlags();
     if (editor.getModel() === models[lang]) return;
     editor.setModel(models[lang]);
     runner.preload(lang);

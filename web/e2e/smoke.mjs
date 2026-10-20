@@ -132,6 +132,15 @@ try {
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
   step('cpp exit code shared');
+
+  await cand.click('#flags', { count: 3 });
+  await cand.keyboard.type('-std=c++26 -Wall -Werror');
+  await cand.keyboard.press('Enter');
+  await iv.waitForFunction(() => document.querySelector('#flags').value.includes('-Werror'));
+  step('flags synced');
+  await runCase(iv, cand, 'cpp', 'int main() { int unused; }', '$ clang++ -std=c++26 -Wall -Werror main.cpp');
+  await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[compilation failed]'));
+  step('flags applied');
   await runCase(cand, iv, 'c', null, 'Hello from C\n');
   await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable]');
 
