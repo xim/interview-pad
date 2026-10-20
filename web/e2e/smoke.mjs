@@ -136,6 +136,16 @@ try {
   await runCase(cand, iv, 'python', 'import pytest\ndef test_x(): assert 1 + 1 == 3\nif __name__ == "__main__": pytest.main(["-q", "main.py"])', '1 failed');
   await runCase(cand, iv, 'python', 'while True: pass', '[killed: timeout after 10 s]');
   await runCase(cand, iv, 'python', 'print("recovered")', 'recovered');
+  await setCode(cand, 'import collections\ncollections.Coun');
+  await cand.keyboard.down('Control');
+  await cand.keyboard.press('Space');
+  await cand.keyboard.up('Control');
+  await cand.waitForFunction(
+    () => [...document.querySelectorAll('.suggest-widget .monaco-list-row')].some((r) => r.textContent.includes('Counter')),
+    { timeout: 60000 },
+  );
+  await cand.keyboard.press('Escape');
+  step('python completion (jedi)');
 
   await runCase(iv, cand, 'cpp', null, 'Hello from C++: [3, 1, 2]', 120000);
   await runCase(iv, cand, 'cpp', 'int main() { return x; }', '[compilation failed]');

@@ -8,6 +8,7 @@ import { removeAwarenessStates } from 'y-protocols/awareness';
 import * as Y from 'yjs';
 import { $, api, route, type Me } from './main';
 import { setupRun } from './run';
+import { registerPythonIntelligence } from './completion';
 
 self.MonacoEnvironment = {
   getWorker: (_id, label) => (label === 'typescript' || label === 'javascript' ? new TsWorker() : new EditorWorker()),
@@ -49,6 +50,7 @@ export function startPad(me: Me) {
     padding: { top: 16 }, // room for remote cursor labels on line 1
     fontSize: 14,
   });
+  registerPythonIntelligence(() => true);
   const models = {} as Record<Lang, monaco.editor.ITextModel>;
   for (const [lang, l] of Object.entries(LANGS) as [Lang, (typeof LANGS)[Lang]][]) {
     models[lang] = monaco.editor.createModel('', l.monaco, monaco.Uri.file(l.file));

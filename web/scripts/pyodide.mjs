@@ -8,6 +8,7 @@ const PACKAGES = [
   ...['numpy', 'pandas', 'pydantic', 'pytest', 'attrs', 'toolz', 'more-itertools', 'sortedcontainers', 'bitarray'],
   ...['regex', 'pyyaml', 'tomli-w', 'orjson', 'simplejson', 'jinja2', 'beautifulsoup4', 'click', 'packaging'],
   ...['rich', 'tqdm', 'termcolor', 'cachetools', 'typing-extensions'],
+  'jedi', // editor completion (python-lsp.worker.ts)
 ];
 const CORE = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm', 'python_stdlib.zip'];
 
