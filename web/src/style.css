@@ -74,3 +74,53 @@ summary {
 .request span {
   flex: 1;
 }
+
+#pad:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  background: #252526;
+}
+
+#participants {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.participant::before {
+  content: "●";
+  color: var(--color);
+  margin-right: 0.3rem;
+}
+
+#conn {
+  color: var(--error);
+}
+
+#editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.yRemoteSelectionHead {
+  position: relative;
+}
+
+.yRemoteSelectionHead::after {
+  position: absolute;
+  top: -1.1em;
+  left: -2px;
+  padding: 0 0.25em;
+  font-size: 0.75em;
+  color: #000;
+  white-space: nowrap;
+  pointer-events: none;
+}

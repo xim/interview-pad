@@ -12,6 +12,9 @@ async function open(label) {
   const page = await (await browser.createBrowserContext()).newPage();
   page.on('pageerror', (e) => console.log(`[${label}] pageerror:`, e.message));
   page.on('console', (m) => m.type() === 'error' && !m.text().includes('401') && console.log(`[${label}] console:`, m.text()));
+  await page.evaluateOnNewDocument(() => {
+    window.editorText = () => document.querySelector('.view-lines')?.textContent.replace(/\u00a0/g, ' ') ?? '';
+  });
   await page.goto(url);
   return page;
 }
@@ -38,6 +41,22 @@ try {
   await iv.click('.request button');
   await cand.waitForSelector('#pad:not([hidden])');
   step('candidate admitted');
+
+  await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 2);
+  step('participants: 2');
+
+  await cand.select('#lang', 'python');
+  await iv.waitForFunction(() => document.querySelector('#lang').value === 'python');
+  await iv.waitForFunction(() => editorText().includes('Hello from'));
+  step('language switch synced');
+
+  const marker = `marker_${Date.now()}`;
+  await cand.click('.view-lines');
+  await cand.keyboard.press('End');
+  await cand.keyboard.type(` # ${marker}`);
+  await iv.waitForFunction((m) => editorText().includes(m), {}, marker);
+  step('edit synced');
+  if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
 } finally {
   await browser.close();
 }

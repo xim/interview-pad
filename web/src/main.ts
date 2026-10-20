@@ -19,7 +19,7 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
   return r.json();
 }
 
-const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+export const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
 function show(id: 'landing' | 'waiting' | 'pad') {
   for (const s of document.querySelectorAll('body > section')) (s as HTMLElement).hidden = s.id !== id;
@@ -36,9 +36,9 @@ function route(me: Me) {
   setTimeout(() => api<Me>('me').then(route, () => route(me)), POLL_MS);
 }
 
-function enterPad(me: Me) {
+async function enterPad(me: Me) {
   show('pad');
-  $('pad-placeholder').textContent = `Welcome, ${me.name} (${me.role}).`;
+  (await import('./pad')).startPad(me);
   if (me.role === 'interviewer') pollRequests();
 }
 
