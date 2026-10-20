@@ -6,7 +6,8 @@ import { WebsocketProvider } from 'y-websocket';
 import { removeAwarenessStates } from 'y-protocols/awareness';
 import * as Y from 'yjs';
 import { $, api, route, type Me } from './main';
-import { setupRun } from './run';
+import { setupRun, splitArgs } from './run';
+import { configureClangd, startClangd } from './clangd';
 import { registerPythonIntelligence } from './completion';
 import { settings, setupSettings } from './settings';
 
@@ -74,6 +75,9 @@ export function startPad(me: Me) {
     if (document.activeElement !== flagsInput) flagsInput.value = flags(lang);
   };
   state.observe(applyFlags);
+  const syncClangdFlags = () => configureClangd({ flags: { c: splitArgs(flags('c')), cpp: splitArgs(flags('cpp')) } });
+  state.observe(syncClangdFlags);
+  syncClangdFlags();
 
   const select = $<HTMLSelectElement>('lang');
   select.replaceChildren(...Object.entries(LANGS).map(([lang, l]) => new Option(l.label, lang)));
@@ -85,6 +89,7 @@ export function startPad(me: Me) {
     if (editor.getModel() === models[lang]) return;
     editor.setModel(models[lang]);
     runner.preload(lang);
+    if (lang === 'c' || lang === 'cpp') startClangd((text) => ($('lsp-status').textContent = text));
   };
   state.observe(applyLang);
   applyLang();

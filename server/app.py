@@ -9,6 +9,7 @@ from pycrdt import Map, Text
 from pycrdt.websocket import ASGIServer, WebsocketServer
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
+from starlette.middleware import Middleware
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Mount, Route, WebSocketRoute
@@ -50,6 +51,23 @@ print(greet("Python"))
 console.log(greet("TypeScript"));
 """,
 }
+
+
+# Cross-origin isolation enables SharedArrayBuffer, which the threaded clangd build needs.
+ISOLATION_HEADERS = [(b"cross-origin-opener-policy", b"same-origin"), (b"cross-origin-embedder-policy", b"require-corp")]
+
+
+class CrossOriginIsolation:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        async def send_isolated(message):
+            if message["type"] == "http.response.start":
+                message = {**message, "headers": [*message.get("headers", []), *ISOLATION_HEADERS]}
+            await send(message)
+
+        await self.app(scope, receive, send_isolated)
 
 
 @dataclass
@@ -183,4 +201,5 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
             Mount("/", StaticFiles(directory=STATIC_DIR, html=True, check_dir=False)),
         ],
         lifespan=lifespan,
+        middleware=[Middleware(CrossOriginIsolation)],
     )

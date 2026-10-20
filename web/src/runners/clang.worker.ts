@@ -1,23 +1,8 @@
 import { commands, Exit } from '@yowasp/clang';
 
+import { HIDDEN_FLAGS } from './clang-flags';
 import RUNTIME from './runtime.c?raw';
 
-// Always passed, ahead of the user's flags (so those can still override). WASM doesn't fault on null or
-// out-of-bounds accesses, so catch UB with UBSan (handlers in runtime.c) and libc++ hardening (which only
-// prints its message with the experimental ENFORCE semantic; QUICK_ENFORCE traps silently).
-const HIDDEN = {
-  c: ['-fsanitize=undefined', '-fno-sanitize-recover=all'],
-  cpp: [
-    // exception runtime built by scripts/clang-eh.mjs; the tag export lets wasi.worker.ts report uncaught ones
-    '-fwasm-exceptions',
-    '-Wl,--export-if-defined=__cpp_exception', // absent if the user adds -fno-exceptions
-    '-fsanitize=undefined',
-    '-fno-sanitize-recover=all',
-    '-fexperimental-library',
-    '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST',
-    '-D_LIBCPP_ASSERTION_SEMANTIC=_LIBCPP_ASSERTION_SEMANTIC_ENFORCE',
-  ],
-};
 
 const post = (text: string) => postMessage({ type: 'out', text });
 const decoder = new TextDecoder();
@@ -55,7 +40,7 @@ onmessage = async ({ data }) => {
     const files: Record<string, string | Uint8Array> = { [source]: src, [`runtime.${lang}`]: RUNTIME };
     if (lang === 'cpp') files['libeh.a'] = await libeh!;
     post(`$ ${name} ${flags.join(' ')} ${source}\n`);
-    const args = [...HIDDEN[lang], ...flags, ...Object.keys(files), '-o', 'main.wasm'];
+    const args = [...HIDDEN_FLAGS[lang], ...flags, ...Object.keys(files), '-o', 'main.wasm'];
     const out = await commands[name](args, files, { stdout: write, stderr: write, fetchProgress });
     const wasm = out!['main.wasm'] as Uint8Array;
     postMessage({ type: 'exit', code: 0, wasm });

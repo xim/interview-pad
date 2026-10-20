@@ -19,6 +19,8 @@ export default defineConfig({
     ],
   },
   server: {
+    // as the backend sends (server/app.py), for clangd's threads
+    headers: { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' },
     proxy: {
       '/api': backend,
       '/ws': { target: backend, ws: true },

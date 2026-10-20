@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor';
 import { initVimMode } from 'monaco-vim';
+import { configureClangd } from './clangd';
 import { $ } from './main';
 
 // Per viewer, remembered in localStorage.
@@ -34,7 +35,8 @@ export function setupSettings(editor: monaco.editor.IStandaloneCodeEditor) {
       parameterHints: { enabled: on },
       wordBasedSuggestions: on ? 'matchingDocuments' : 'off',
     });
-    // Python's providers check settings.completion themselves (completion.ts)
+    // Python's providers check settings.completion themselves (completion.ts); clangd's worker drops requests
+    configureClangd({ completion: on });
     monaco.typescript.typescriptDefaults.setModeConfiguration({
       ...monaco.typescript.typescriptDefaults.modeConfiguration,
       completionItems: on,

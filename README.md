@@ -22,6 +22,20 @@ podman run --rm -p 127.0.0.1:8080:8000 -e INTERVIEWER_PASSWORD=secret interview-
   address, set `-e INSECURE_COOKIES=1`.
 - One instance per interview: run more on different ports, each with its own password.
 
+## C/C++ IntelliSense (optional)
+
+Completion, diagnostics, hover etc. for C/C++ come from clangd compiled to WASM, which isn't part of the normal build:
+
+```sh
+tools/clangd/build.sh    # ~10 min on 32 cores, ~6 GB in ~/.cache/interview-pad-clangd; needs git, cmake, make
+podman build -t interview-pad .   # picks up web/public/clangd/
+```
+
+Without it, C/C++ still compile and run; the editor just says IntelliSense is unavailable. Cost per participant,
+on first selecting C or C++: a 58 MB download (16 MB gzipped), ~0.5 GB RAM, ~3 s and ~18 CPU-seconds to the first
+completion (~1.6 s and ~5 CPU-seconds once the browser has cached it), then idle. It needs cross-origin isolation
+(COOP/COEP headers, always sent by the server), as it uses threads.
+
 ## Behind Apache
 
 ```apache

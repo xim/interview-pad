@@ -5,3 +5,4 @@ __pycache__/
 proto/
 web/public/pyodide/
 web/public/clang/
+web/public/clangd/

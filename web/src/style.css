@@ -265,6 +265,11 @@ main {
   font-size: 13px;
 }
 
+#lsp-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 #run-status {
   flex: 1;
   min-width: 0;

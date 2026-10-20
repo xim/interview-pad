@@ -196,4 +196,4 @@ Python packages: a few bundled, lazily loaded ✓.
 4. ✓ Settings cogwheel: Vim bindings, completion suggestions on/off, Monaco theme
 5. ✓ Interviewer is always a friendly green; candidates get the other colors
 6. ✓ C++ exceptions: libunwind + libc++abi EH parts built with -fwasm-exceptions at npm install
-7. clangd (WASM) for C/C++ completion: hard look
+7. ✓ clangd (WASM) for C/C++: optional build (tools/clangd/build.sh), Monaco's built-in LSP client

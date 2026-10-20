@@ -46,6 +46,12 @@ def test_login_invalid_json(app):
     assert TestClient(app).post("/api/login", content=b"{").status_code == 400
 
 
+def test_cross_origin_isolation_headers(app):
+    r = TestClient(app).get("/api/me")
+    assert r.headers["cross-origin-opener-policy"] == "same-origin"
+    assert r.headers["cross-origin-embedder-policy"] == "require-corp"
+
+
 def test_cookie_secure_by_default():
     r = TestClient(create_app(password="pw")).post("/api/login", json={"password": "pw"})
     cookie = r.headers["set-cookie"].lower()

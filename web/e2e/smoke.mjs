@@ -179,6 +179,25 @@ try {
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
   step('cpp exit code shared');
+
+  if ((await fetch(new URL('clangd/clangd.wasm', url), { method: 'HEAD' })).ok) {
+    await setCode(cand, '#include <limits>\nint main() { std::numeric_li');
+    await cand.waitForFunction(() => !document.querySelector('#lsp-status').textContent, { timeout: 120000 });
+    await cand.keyboard.down('Control');
+    await cand.keyboard.press('Space');
+    await cand.keyboard.up('Control');
+    await cand.waitForFunction(
+      () => [...document.querySelectorAll('.suggest-widget .monaco-list-row')].some((r) => r.textContent.includes('numeric_limits')),
+      { timeout: 60000 },
+    );
+    await cand.keyboard.press('Escape');
+    step('cpp completion (clangd)');
+    await setCode(cand, 'int main() { undeclared_fn(); }');
+    await cand.waitForSelector('.squiggly-error', { timeout: 30000 });
+    step('cpp diagnostics (clangd)');
+  } else {
+    console.log('- clangd not built, skipping its checks');
+  }
   await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v(3); return v[1000]; }', 'vector[] index out of bounds');
 
   await cand.click('#flags', { count: 3 });
