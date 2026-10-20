@@ -19,8 +19,7 @@ extern "C" [[noreturn]] void __cxa_throw(void*, std::type_info* type, void (*)(v
 }
 `;
 
-const clang = commands['clang++'];
-const ARGS = ['-std=c++26', '-O2', '-Wall', '-Wextra', 'main.cpp', 'stub.cpp', '-o', 'main.wasm'];
+const FLAGS = ['-O2', '-Wall', '-Wextra'];
 
 const post = (text: string) => postMessage({ type: 'out', text });
 const decoder = new TextDecoder();
@@ -37,13 +36,18 @@ const fetchProgress = ({ doneLength, totalLength }: { doneLength: number; totalL
 onmessage = async ({ data }) => {
   if (data.preload) {
     try {
-      await clang(['--version'], {}, { stdout: null, fetchProgress });
+      await commands.clang(['--version'], {}, { stdout: null, fetchProgress });
     } catch {}
     return;
   }
   postMessage({ type: 'status', text: 'Compiling' });
   try {
-    const out = await clang(ARGS, { 'main.cpp': data, 'stub.cpp': STUB }, { stdout: write, stderr: write, fetchProgress });
+    const { lang, src } = data as { lang: 'c' | 'cpp'; src: string };
+    const [clang, args, files] =
+      lang === 'c'
+        ? [commands.clang, ['-std=c2y', 'main.c'], { 'main.c': src }]
+        : [commands['clang++'], ['-std=c++26', 'main.cpp', 'stub.cpp'], { 'main.cpp': src, 'stub.cpp': STUB }];
+    const out = await clang([...FLAGS, ...args, '-o', 'main.wasm'], files, { stdout: write, stderr: write, fetchProgress });
     const wasm = out!['main.wasm'] as Uint8Array;
     postMessage({ type: 'exit', code: 0, wasm });
   } catch (e) {

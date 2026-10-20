@@ -23,6 +23,12 @@ STATIC_DIR = os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "web" /
 ROOM = "/ws/pad"  # y-websocket connects to <url>/<room>; pycrdt-websocket names rooms by path
 
 TEMPLATES = {
+    "c": """#include <stdio.h>
+
+int main(void) {
+    printf("Hello from %s\\n", "C");
+}
+""",
     "cpp": """#include <print>
 #include <vector>
 

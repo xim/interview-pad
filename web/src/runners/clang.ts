@@ -1,21 +1,22 @@
 import { runWorker, type Runner } from '../run';
-import CppWorker from './cpp.worker?worker';
+import ClangWorker from './clang.worker?worker';
 import WasiWorker from './wasi.worker?worker';
 
-// Long-lived so the ~100 MB compiler loads once; replaced after a kill. Programs run in a separate worker.
+// Long-lived and shared by C/C++ so the ~100 MB compiler loads once; replaced after a kill.
+// Programs run in a separate worker.
 let compiler: Worker | undefined;
 
 function getCompiler() {
-  compiler ??= new CppWorker();
+  compiler ??= new ClangWorker();
   return compiler;
 }
 
-export const cppRunner: Runner = {
+export const clangRunner = (lang: 'c' | 'cpp'): Runner => ({
   preload: () => getCompiler().postMessage({ preload: true }),
   async run(model, ctx) {
     let result;
     try {
-      result = await runWorker<{ wasm?: Uint8Array }>(getCompiler(), model.getValue(), ctx, true);
+      result = await runWorker<{ wasm?: Uint8Array }>(getCompiler(), { lang, src: model.getValue() }, ctx, true);
     } catch (e) {
       compiler = undefined;
       throw e;
@@ -27,4 +28,4 @@ export const cppRunner: Runner = {
     ctx.start();
     return (await runWorker(new WasiWorker(), result.wasm, ctx)).code;
   },
-};
+});

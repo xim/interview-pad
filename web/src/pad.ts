@@ -13,6 +13,7 @@ self.MonacoEnvironment = {
 };
 
 export const LANGS = {
+  c: { label: 'C', monaco: 'c', file: 'main.c' },
   cpp: { label: 'C++', monaco: 'cpp', file: 'main.cpp' },
   python: { label: 'Python', monaco: 'python', file: 'main.py' },
   ts: { label: 'TypeScript', monaco: 'typescript', file: 'main.ts' },

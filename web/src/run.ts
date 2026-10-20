@@ -3,7 +3,7 @@ import type { WebsocketProvider } from 'y-websocket';
 import type * as Y from 'yjs';
 import { $, type Me } from './main';
 import type { Lang } from './pad';
-import { cppRunner } from './runners/cpp';
+import { clangRunner } from './runners/clang';
 import { pythonRunner } from './runners/python';
 import { tsRunner } from './runners/ts';
 
@@ -35,7 +35,7 @@ type RunState = {
   ms?: number;
 };
 
-const RUNNERS: Record<Lang, Runner> = { cpp: cppRunner, python: pythonRunner, ts: tsRunner };
+const RUNNERS: Record<Lang, Runner> = { c: clangRunner('c'), cpp: clangRunner('cpp'), python: pythonRunner, ts: tsRunner };
 
 // Run in a worker speaking {type: 'out', text} / {type: 'status', text} / {type: 'start'} / {type: 'exit', code}.
 // The worker is terminated on abort or error, and after exit unless keepAlive.
