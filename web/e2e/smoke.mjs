@@ -101,6 +101,13 @@ try {
   await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[killed: stopped]'));
   step('stop kills a hung run');
 
+  await runCase(iv, cand, 'python', 'import sys; print("py", sum(range(10)), __name__); print("err", file=sys.stderr); sys.exit(3)', 'py 45 __main__\nerr\n');
+  await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 3'));
+  step('python exit code shared');
+  await runCase(cand, iv, 'python', 'x = 1 / 0', 'ZeroDivisionError: division by zero');
+  await runCase(cand, iv, 'python', 'while True: pass', '[killed: timeout after 10 s]');
+  await runCase(cand, iv, 'python', 'print("recovered")', 'recovered');
+
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
 } finally {
   await browser.close();

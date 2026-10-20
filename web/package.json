@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "postinstall": "mkdir -p public/pyodide && cp node_modules/pyodide/pyodide.mjs node_modules/pyodide/pyodide.asm.mjs node_modules/pyodide/pyodide.asm.wasm node_modules/pyodide/python_stdlib.zip node_modules/pyodide/pyodide-lock.json public/pyodide/"
   },
   "type": "module",
   "private": true,
@@ -15,6 +16,7 @@
   "dependencies": {
     "monaco-editor": "^0.57.0",
     "monaco-vim": "^0.4.4",
+    "pyodide": "^314.0.7",
     "y-monaco": "^0.1.6",
     "y-websocket": "^3.1.0",
     "yjs": "^13.6.33"

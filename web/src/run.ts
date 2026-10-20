@@ -14,6 +14,8 @@ const FLUSH_MS = 50;
 export type RunContext = {
   write: (text: string) => void;
   status: (text: string) => void;
+  // user code starts now: the timeout covers only what follows, not runtime loading/compiling
+  start: () => void;
   signal: AbortSignal;
 };
 
@@ -35,28 +37,31 @@ type RunState = {
 
 const RUNNERS: Record<Lang, Runner> = { cpp: cppRunner, python: pythonRunner, ts: tsRunner };
 
-// Run in a disposable worker speaking {type: 'out', text} / {type: 'exit', code}; terminated on abort.
-export function runWorker(worker: Worker, message: unknown, ctx: RunContext): Promise<number> {
+// Run in a worker speaking {type: 'out', text} / {type: 'status', text} / {type: 'start'} / {type: 'exit', code}.
+// The worker is terminated on abort or error, and after exit unless keepAlive.
+export function runWorker(worker: Worker, message: unknown, ctx: RunContext, keepAlive = false): Promise<number> {
   return new Promise((resolve, reject) => {
-    const done = () => {
-      worker.terminate();
+    const done = (terminate: boolean) => {
+      if (terminate) worker.terminate();
       ctx.signal.removeEventListener('abort', abort);
     };
     const abort = () => {
-      done();
+      done(true);
       reject(new Error(String(ctx.signal.reason)));
     };
     if (ctx.signal.aborted) return abort();
     ctx.signal.addEventListener('abort', abort);
     worker.onmessage = ({ data }) => {
       if (data.type === 'out') ctx.write(data.text);
+      else if (data.type === 'status') ctx.status(data.text);
+      else if (data.type === 'start') ctx.start();
       else if (data.type === 'exit') {
-        done();
+        done(!keepAlive);
         resolve(data.code);
       }
     };
     worker.onerror = (e) => {
-      done();
+      done(true);
       reject(new Error(e.message));
     };
     worker.postMessage(message);
@@ -89,8 +94,12 @@ export function setupRun(opts: {
   async function run() {
     if (busy()) return;
     const lang = opts.currentLang();
-    abort = new AbortController();
-    const timer = setTimeout(() => abort?.abort('killed: timeout'), TIMEOUT_MS);
+    const ctrl = (abort = new AbortController());
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const start = () => {
+      setRun({ phase: undefined });
+      timer ??= setTimeout(() => ctrl.abort(`killed: timeout after ${TIMEOUT_MS / 1000} s`), TIMEOUT_MS);
+    };
     doc.transact(() => {
       output.delete(0, output.length);
       state.set('run', { status: 'running', by: me.name, clientId: doc.clientID, lang } satisfies RunState);
@@ -117,9 +126,9 @@ export function setupRun(opts: {
     const t0 = performance.now();
     let exitCode: number | null = null;
     try {
-      exitCode = await RUNNERS[lang].run(opts.model(lang), { write, status: (phase) => setRun({ phase }), signal: abort.signal });
+      exitCode = await RUNNERS[lang].run(opts.model(lang), { write, status: (phase) => setRun({ phase }), start, signal: ctrl.signal });
     } catch (e) {
-      write(`\n[${abort.signal.aborted ? abort.signal.reason : `error: ${e instanceof Error ? e.message : e}`}]\n`);
+      write(`\n[${ctrl.signal.aborted ? ctrl.signal.reason : `error: ${e instanceof Error ? e.message : e}`}]\n`);
     }
     clearTimeout(timer);
     clearTimeout(flushTimer);
