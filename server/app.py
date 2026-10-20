@@ -1,18 +1,46 @@
 import logging
 import os
 import secrets
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
+from pycrdt import Map, Text
+from pycrdt.websocket import ASGIServer, WebsocketServer
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
-from starlette.requests import Request
+from starlette.requests import HTTPConnection, Request
 from starlette.responses import JSONResponse, Response
-from starlette.routing import Route
+from starlette.routing import Route, WebSocketRoute
+from starlette.websockets import WebSocket
 
 log = logging.getLogger("uvicorn.error")
 
 COOKIE = "session"
 MAX_NAME = 40
+ROOM = "/ws/pad"  # y-websocket connects to <url>/<room>; pycrdt-websocket names rooms by path
+
+TEMPLATES = {
+    "cpp": """#include <print>
+#include <vector>
+
+int main() {
+    std::vector<int> v{3, 1, 2};
+    std::println("Hello from C++: {}", v);
+}
+""",
+    "python": """def greet(name: str) -> str:
+    return f"Hello from {name}"
+
+
+print(greet("Python"))
+""",
+    "ts": """function greet(name: string): string {
+    return `Hello from ${name}`;
+}
+
+console.log(greet("TypeScript"));
+""",
+}
 
 
 @dataclass
@@ -33,9 +61,29 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
         secure_cookies = not os.environ.get("INSECURE_COOKIES")
 
     sessions: dict[str, Session] = {}
+    yserver = WebsocketServer(auto_clean_rooms=False, log=log)
 
-    def current(request: Request) -> Session | None:
-        return sessions.get(request.cookies.get(COOKIE, ""))
+    def current(conn: HTTPConnection) -> Session | None:
+        return sessions.get(conn.cookies.get(COOKIE, ""))
+
+    yasgi = ASGIServer(yserver)
+
+    async def ws(websocket: WebSocket):
+        s = current(websocket)
+        if s is None or s.status != "admitted":
+            await websocket.close(1008)
+            return
+        await yasgi(websocket.scope, websocket.receive, websocket.send)
+
+    @asynccontextmanager
+    async def lifespan(app: Starlette):
+        async with yserver:
+            doc = (await yserver.get_room(ROOM)).ydoc
+            for lang, code in TEMPLATES.items():
+                doc[f"code:{lang}"] = Text(code)
+            doc["state"] = Map({"lang": "cpp"})
+            doc["output"] = Text()
+            yield
 
     def require_interviewer(request: Request) -> None:
         s = current(request)
@@ -102,5 +150,7 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
             Route("/api/me", me),
             Route("/api/pending", pending),
             Route("/api/admit/{id}", admit, methods=["POST"]),
-        ]
+            WebSocketRoute(ROOM, ws),
+        ],
+        lifespan=lifespan,
     )

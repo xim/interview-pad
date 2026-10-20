@@ -1,7 +1,10 @@
 import pytest
 from starlette.testclient import TestClient
 
-from app import create_app
+from pycrdt import Doc, Map, Text, YMessageType, YSyncMessageType, create_sync_message, handle_sync_message
+from starlette.websockets import WebSocketDisconnect
+
+from app import ROOM, TEMPLATES, create_app
 
 
 @pytest.fixture
@@ -70,3 +73,31 @@ def test_admit_bad_body(app, interviewer):
     TestClient(app).post("/api/join", json={"name": "Ada"})
     pid = interviewer.get("/api/pending").json()[0]["id"]
     assert interviewer.post(f"/api/admit/{pid}", json={"admit": "yes"}).status_code == 400
+
+
+def sync_doc(ws) -> Doc:
+    doc = Doc()
+    ws.send_bytes(create_sync_message(doc))
+    while True:
+        msg = ws.receive_bytes()
+        if msg[0] == YMessageType.SYNC and msg[1] == YSyncMessageType.SYNC_STEP2:
+            handle_sync_message(msg[1:], doc)
+            return doc
+
+
+def test_ws_requires_admitted(app):
+    with TestClient(app) as c:
+        with pytest.raises(WebSocketDisconnect):
+            c.websocket_connect(ROOM).__enter__()
+        c.post("/api/join", json={"name": "Ada"})
+        with pytest.raises(WebSocketDisconnect):
+            c.websocket_connect(ROOM).__enter__()
+
+
+def test_ws_sync_seeded_doc(app):
+    with TestClient(app) as c:
+        c.post("/api/login", json={"password": "pw"})
+        with c.websocket_connect(ROOM) as ws:
+            doc = sync_doc(ws)
+        assert str(doc.get("code:python", type=Text)) == TEMPLATES["python"]
+        assert doc.get("state", type=Map)["lang"] == "cpp"
