@@ -191,7 +191,7 @@ Python packages: a few bundled, lazily loaded ✓.
 
 1. ✓ C/C++: always-on UBSan (own handlers, with source locations) + libc++ hardening (with messages); hidden from
    the printed command line; crash summary (Aborted / Crashed: …) with backtrace
-2. Audit Pyodide packages for commonly used, small libraries
+2. ✓ Audit Pyodide packages for commonly used, small libraries
 3. Jedi completion for Python
 4. Settings cogwheel: Vim bindings, completion suggestions on/off, Monaco theme
 5. Interviewer is always a friendly green; candidates get the other colors

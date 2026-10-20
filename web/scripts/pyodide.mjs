@@ -3,7 +3,12 @@
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 
-const PACKAGES = ['numpy', 'pyyaml', 'sortedcontainers', 'regex', 'more-itertools'];
+// Commonly used and small-ish; scipy/polars/matplotlib/sympy are left out for size, networkx needs matplotlib.
+const PACKAGES = [
+  ...['numpy', 'pandas', 'pydantic', 'pytest', 'attrs', 'toolz', 'more-itertools', 'sortedcontainers', 'bitarray'],
+  ...['regex', 'pyyaml', 'tomli-w', 'orjson', 'simplejson', 'jinja2', 'beautifulsoup4', 'click', 'packaging'],
+  ...['rich', 'tqdm', 'termcolor', 'cachetools', 'typing-extensions'],
+];
 const CORE = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm', 'python_stdlib.zip'];
 
 const src = new URL('../node_modules/pyodide/', import.meta.url);
@@ -15,7 +20,8 @@ await mkdir(dest, { recursive: true });
 for (const f of CORE) await copyFile(new URL(f, src), new URL(f, dest));
 
 const wanted = new Set();
-const visit = (name) => {
+const visit = (dep) => {
+  const name = dep.toLowerCase().replace(/[-_.]+/g, '-'); // depends uses unnormalized names
   if (wanted.has(name)) return;
   if (!lock.packages[name]) throw new Error(`unknown Pyodide package: ${name}`);
   wanted.add(name);

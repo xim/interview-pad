@@ -7,9 +7,13 @@ const HARNESS = `
 import sys, traceback
 
 def run(src, argv):
+    # a real file: tracebacks show source lines, and tools like pytest can import it
+    with open("main.py", "w") as f:
+        f.write(src)
     sys.argv = ["main.py", *argv]
+    sys.modules.pop("main", None)
     try:
-        exec(compile(src, "main.py", "exec"), {"__name__": "__main__"})
+        exec(compile(src, "main.py", "exec"), {"__name__": "__main__", "__file__": "main.py"})
     except SystemExit as e:
         if e.code is None or isinstance(e.code, int):
             return e.code or 0

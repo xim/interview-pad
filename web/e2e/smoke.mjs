@@ -129,9 +129,11 @@ try {
   await runCase(iv, cand, 'python', 'import sys; print("py", sum(range(10)), __name__); print("err", file=sys.stderr); sys.exit(3)', 'py 45 __main__\nerr\n');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 3'));
   step('python exit code shared');
-  await runCase(cand, iv, 'python', 'x = 1 / 0', 'ZeroDivisionError: division by zero');
+  await runCase(cand, iv, 'python', 'x = 1 / 0', 'File "main.py", line 1, in <module>\n    x = 1 / 0\n');
   await runCase(cand, iv, 'python', 'import numpy as np, yaml, tomllib; print(np.arange(4).sum(), yaml.safe_load("a: 1"), tomllib.loads("b = 2"))', "6 {'a': 1} {'b': 2}");
-  await runCase(cand, iv, 'python', 'import pandas', "ModuleNotFoundError: No module named 'pandas'");
+  await runCase(cand, iv, 'python', 'import scipy', "ModuleNotFoundError: No module named 'scipy'");
+  await runCase(cand, iv, 'python', 'import pandas as pd; print(pd.DataFrame({"a": [1, 2]}).a.sum())', '3');
+  await runCase(cand, iv, 'python', 'import pytest\ndef test_x(): assert 1 + 1 == 3\nif __name__ == "__main__": pytest.main(["-q", "main.py"])', '1 failed');
   await runCase(cand, iv, 'python', 'while True: pass', '[killed: timeout after 10 s]');
   await runCase(cand, iv, 'python', 'print("recovered")', 'recovered');
 
