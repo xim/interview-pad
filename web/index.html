@@ -34,30 +34,35 @@
       <h2>Join requests</h2>
       <div id="requests"></div>
     </dialog>
-    <header id="toolbar">
-      <select id="lang"></select>
-      <input id="flags" spellcheck="false" title="Compiler flags (shared)">
-      <button id="run" title="Ctrl+Enter">Run</button>
-      <button id="input" class="secondary" title="Program arguments and stdin (shared)">Input</button>
-      <button id="stop" hidden>Stop</button>
-      <span id="run-status"></span>
-      <span id="participants"></span>
-      <span id="conn"></span>
-      <label><input id="vim" type="checkbox"> Vim</label>
-      <button id="end" class="secondary" hidden>End interview</button>
-    </header>
-    <dialog id="input-dialog">
-      <h2>Program input <small>(shared, used on every run)</small></h2>
-      <label>Arguments <input id="args" spellcheck="false" placeholder='e.g. 42 "two words"'></label>
-      <label>stdin <textarea id="stdin" rows="10" spellcheck="false"></textarea></label>
-      <form method="dialog"><button>Close</button></form>
-    </dialog>
     <main>
       <div id="left">
+        <header class="bar">
+          <select id="lang"></select>
+          <input id="flags" spellcheck="false" title="Compiler flags (shared)">
+          <button id="run" title="Ctrl+Enter">Run</button>
+          <button id="stop" hidden>Stop</button>
+          <span id="participants"></span>
+          <span id="conn"></span>
+          <label><input id="vim" type="checkbox"> Vim</label>
+        </header>
         <div id="editor"></div>
         <div id="vim-status" hidden></div>
       </div>
-      <pre id="output"></pre>
+      <div id="splitter"></div>
+      <div id="right">
+        <header class="bar">
+          <button class="tab" data-tab="output">Output</button>
+          <button class="tab" data-tab="input" title="Program arguments and stdin (shared)">Input</button>
+          <span id="run-status"></span>
+          <button id="end" class="secondary" hidden>End interview</button>
+        </header>
+        <pre id="output" class="pane"></pre>
+        <div id="input" class="pane">
+          <label>Arguments <input id="args" spellcheck="false" placeholder='e.g. 42 "two words"'></label>
+          <label class="grow">stdin <textarea id="stdin" spellcheck="false"></textarea></label>
+          <small>Shared, used on every run.</small>
+        </div>
+      </div>
     </main>
   </section>
 

@@ -79,15 +79,35 @@ export function startPad(me: Me) {
   state.observe(applyLang);
   applyLang();
 
-  const inputDialog = $<HTMLDialogElement>('input-dialog');
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('.tab')];
+  const showTab = (name: string) => {
+    for (const t of tabs) {
+      t.classList.toggle('active', t.dataset.tab === name);
+      $(t.dataset.tab!).hidden = t.dataset.tab !== name;
+    }
+  };
+  for (const t of tabs) t.onclick = () => showTab(t.dataset.tab!);
+  showTab('output');
+  $('run').addEventListener('click', () => showTab('output'));
+
+  const main = document.querySelector('main')!;
+  const splitter = $('splitter');
+  splitter.onpointerdown = (e) => {
+    splitter.setPointerCapture(e.pointerId);
+    splitter.onpointermove = (e) => {
+      const r = main.getBoundingClientRect();
+      $('left').style.flexBasis = `${Math.min(85, Math.max(15, ((e.clientX - r.left) / r.width) * 100))}%`;
+    };
+  };
+  splitter.onpointerup = () => (splitter.onpointermove = null);
+
   const inputFields = { args: $<HTMLInputElement>('args'), stdin: $<HTMLTextAreaElement>('stdin') };
-  $('input').onclick = () => inputDialog.showModal();
   for (const [key, field] of Object.entries(inputFields)) field.oninput = () => state.set(key, field.value);
   const applyInput = () => {
     for (const [key, field] of Object.entries(inputFields)) {
       if (document.activeElement !== field) field.value = (state.get(key) as string) ?? '';
     }
-    $('input').textContent = Object.keys(inputFields).some((k) => state.get(k)) ? 'Input •' : 'Input';
+    tabs[1].textContent = Object.keys(inputFields).some((k) => state.get(k)) ? 'Input •' : 'Input';
   };
   state.observe(applyInput);
   applyInput();

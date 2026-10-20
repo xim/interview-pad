@@ -149,12 +149,19 @@ try {
   await runCase(cand, iv, 'c', null, 'Hello from C\n');
   await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable]');
 
-  await cand.click('#input');
+  await cand.click('.tab[data-tab=input]');
   await cand.type('#args', 'a "b c"');
   await cand.type('#stdin', '3\n4\n');
-  await cand.click('#input-dialog button');
-  await iv.waitForFunction(() => document.querySelector('#input').textContent === 'Input •');
+  await iv.waitForFunction(() => document.querySelector('.tab[data-tab=input]').textContent === 'Input •');
   step('input synced');
+  await iv.waitForFunction(() => document.querySelector('#input').offsetParent === null);
+  const box = await (await iv.$('#splitter')).boundingBox();
+  await iv.mouse.move(box.x + 2, box.y + box.height / 2);
+  await iv.mouse.down();
+  await iv.mouse.move(400, box.y + box.height / 2, { steps: 5 });
+  await iv.mouse.up();
+  await iv.waitForFunction(() => Math.abs(document.querySelector('#left').getBoundingClientRect().width - 400) < 10);
+  step('splitter resizes panes');
   await runCase(iv, cand, 'python', 'import sys; print(sys.argv[1:], sum(int(l) for l in sys.stdin))', "['a', 'b c'] 7");
   await runCase(iv, cand, 'cpp', '#include <iostream>\nint main(int argc, char** argv) { int a, b; std::cin >> a >> b; std::cout << argc << argv[2] << a + b << "\\n"; }', '3b c7');
   await runCase(iv, cand, 'ts', 'console.log(process.argv.slice(2), Number(prompt()) + Number(prompt()), prompt())', '["a","b c"] 7 null');
