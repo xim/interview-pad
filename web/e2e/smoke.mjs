@@ -141,7 +141,7 @@ try {
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
   step('cpp exit code shared');
-  await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v(3); return v[1000]; }', 'libc++ hardening');
+  await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v(3); return v[1000]; }', 'vector[] index out of bounds');
 
   await cand.click('#flags', { count: 3 });
   await cand.keyboard.type('-std=c++26 -Wall -Werror');
@@ -152,8 +152,9 @@ try {
   await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[compilation failed]'));
   step('flags applied');
   await runCase(cand, iv, 'c', null, 'Hello from C\n');
-  await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable: abort(), or a UB sanitizer');
-  await runCase(cand, iv, 'c', '#include <stdio.h>\nint main(int argc, char** argv) { int* p = argc > 5 ? &argc : 0; printf("%d", *p); }', 'UB sanitizer');
+  await runCase(cand, iv, 'c', '#include <stdlib.h>\n__attribute__((noinline)) void f(void) { abort(); }\nint main(void) { f(); }', '[Aborted]\n    at f\n    at main\n');
+  await runCase(cand, iv, 'c', '#include <stdio.h>\nint main(int argc, char** argv) { int* p = argc > 5 ? &argc : 0; printf("%d", *p); }', 'main.c:2:79: runtime error: load of null pointer of type \'int\'');
+  await runCase(cand, iv, 'c', 'int f(int n) { return f(n + 1) + 1; }\nint main(void) { return f(0); }', '[Crashed: Maximum call stack size exceeded]');
 
   await cand.click('.tab[data-tab=input]');
   await cand.type('#args', 'a "b c"');

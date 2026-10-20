@@ -1,23 +1,20 @@
 import { commands, Exit } from '@yowasp/clang';
 
-// The bundled sysroot has no libunwind, so real exceptions can't link: make `throw` report and abort instead.
-const STUB = `
-#include <cstdio>
-#include <cstdlib>
-#include <typeinfo>
+import RUNTIME from './runtime.c?raw';
 
-extern "C" char* __cxa_demangle(const char*, char*, std::size_t*, int*);
-
-extern "C" void* __cxa_allocate_exception(std::size_t size) noexcept { return std::malloc(size); }
-
-extern "C" [[noreturn]] void __cxa_throw(void*, std::type_info* type, void (*)(void*)) {
-    int status;
-    char* name = __cxa_demangle(type->name(), nullptr, nullptr, &status);
-    std::fflush(stdout);
-    std::fprintf(stderr, "terminate: uncaught exception of type %s (exceptions are not supported here)\\n", name ? name : type->name());
-    std::abort();
-}
-`;
+// Always passed, ahead of the user's flags (so those can still override). WASM doesn't fault on null or
+// out-of-bounds accesses, so catch UB with UBSan (handlers in runtime.c) and libc++ hardening (which only
+// prints its message with the experimental ENFORCE semantic; QUICK_ENFORCE traps silently).
+const HIDDEN = {
+  c: ['-fsanitize=undefined', '-fno-sanitize-recover=all'],
+  cpp: [
+    '-fsanitize=undefined',
+    '-fno-sanitize-recover=all',
+    '-fexperimental-library',
+    '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST',
+    '-D_LIBCPP_ASSERTION_SEMANTIC=_LIBCPP_ASSERTION_SEMANTIC_ENFORCE',
+  ],
+};
 
 const post = (text: string) => postMessage({ type: 'out', text });
 const decoder = new TextDecoder();
@@ -41,10 +38,11 @@ onmessage = async ({ data }) => {
   postMessage({ type: 'status', text: 'Compiling' });
   try {
     const { lang, src, flags } = data as { lang: 'c' | 'cpp'; src: string; flags: string[] };
-    const [name, files] = lang === 'c' ? ['clang', { 'main.c': src }] as const : ['clang++', { 'main.cpp': src, 'stub.cpp': STUB }] as const;
-    const source = lang === 'c' ? 'main.c' : 'main.cpp';
+    const name = lang === 'c' ? 'clang' : 'clang++';
+    const source = `main.${lang}`;
+    const files = { [source]: src, [`runtime.${lang}`]: RUNTIME };
     post(`$ ${name} ${flags.join(' ')} ${source}\n`);
-    const args = [...flags, ...Object.keys(files), '-o', 'main.wasm'];
+    const args = [...HIDDEN[lang], ...flags, ...Object.keys(files), '-o', 'main.wasm'];
     const out = await commands[name](args, files, { stdout: write, stderr: write, fetchProgress });
     const wasm = out!['main.wasm'] as Uint8Array;
     postMessage({ type: 'exit', code: 0, wasm });

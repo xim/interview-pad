@@ -186,3 +186,14 @@ login rate limiting and server-enforced names: no (YAGNI).
 
 UB-catching default flags ✓. Pushing join requests over the Yjs socket: no (candidates must poll anyway).
 Python packages: a few bundled, lazily loaded ✓.
+
+## Queue, round 3 (in order)
+
+1. ✓ C/C++: always-on UBSan (own handlers, with source locations) + libc++ hardening (with messages); hidden from
+   the printed command line; crash summary (Aborted / Crashed: …) with backtrace
+2. Audit Pyodide packages for commonly used, small libraries
+3. Jedi completion for Python
+4. Settings cogwheel: Vim bindings, completion suggestions on/off, Monaco theme
+5. Interviewer is always a friendly green; candidates get the other colors
+6. C++ exceptions: build libunwind + libc++abi EH parts with -fwasm-exceptions, or fail loudly at compile time
+7. clangd (WASM) for C/C++ completion: hard look
