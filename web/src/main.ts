@@ -1,4 +1,4 @@
-export type Me = { name: string; role: 'interviewer' | 'candidate'; status: 'pending' | 'admitted' | 'denied' };
+export type Me = { name: string; role: 'interviewer' | 'candidate'; status: 'pending' | 'admitted' | 'denied' | 'ended' };
 type Pending = { id: string; name: string };
 
 const POLL_MS = 1000;
@@ -9,7 +9,7 @@ class ApiError extends Error {
   }
 }
 
-async function api<T>(path: string, body?: unknown): Promise<T> {
+export async function api<T>(path: string, body?: unknown): Promise<T> {
   const r = await fetch(`api/${path}`, body === undefined ? {} : {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -25,11 +25,11 @@ function show(id: 'landing' | 'waiting' | 'pad') {
   for (const s of document.querySelectorAll('body > section')) (s as HTMLElement).hidden = s.id !== id;
 }
 
-function route(me: Me) {
+export function route(me: Me) {
   if (me.status === 'admitted') return enterPad(me);
   show('waiting');
-  if (me.status === 'denied') {
-    $('waiting-text').textContent = 'The interviewer did not let you in.';
+  if (me.status === 'denied' || me.status === 'ended') {
+    $('waiting-text').textContent = me.status === 'denied' ? 'The interviewer did not let you in.' : 'The interview has ended.';
     return;
   }
   $('waiting-text').textContent = `Hi ${me.name}, waiting for the interviewer to let you in…`;

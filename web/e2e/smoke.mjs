@@ -14,6 +14,7 @@ if (!url) {
     env: { ...process.env, INTERVIEWER_PASSWORD: password },
     stdio: ['ignore', 'ignore', 'pipe'],
   });
+  server.stderr.on('data', (d) => /Traceback|ERROR/.test(d) && process.stderr.write(`[server] ${d}`));
   await new Promise((resolve, reject) => {
     server.stderr.on('data', (d) => d.includes('Application startup complete') && resolve());
     server.on('exit', reject);
@@ -149,6 +150,12 @@ try {
   await runCase(cand, iv, 'c', '#include <stdlib.h>\nint main(void) { abort(); }', '[RuntimeError: unreachable]');
 
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
+
+  iv.once('dialog', (d) => d.accept());
+  await iv.click('#end');
+  await cand.waitForFunction(() => document.querySelector('#waiting-text').textContent === 'The interview has ended.');
+  await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 1);
+  step('end interview kicks the candidate');
 } catch (e) {
   for (const [label, page] of pages) {
     const dump = await page.evaluate(() => [document.querySelector('#run-status')?.textContent, document.querySelector('#output')?.textContent]);

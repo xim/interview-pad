@@ -85,6 +85,29 @@ def test_admit_bad_body(app, interviewer):
     assert interviewer.post(f"/api/admit/{pid}", json={"admit": "yes"}).status_code == 400
 
 
+def test_end_requires_interviewer(app):
+    cand = TestClient(app)
+    cand.post("/api/join", json={"name": "Ada"})
+    assert cand.post("/api/end").status_code == 403
+
+
+def test_end_kicks_candidates(app, interviewer):
+    with TestClient(app) as cand:
+        cand.post("/api/join", json={"name": "Ada"})
+        pid = interviewer.get("/api/pending").json()[0]["id"]
+        interviewer.post(f"/api/admit/{pid}", json={"admit": True})
+        with cand.websocket_connect(ROOM) as ws:
+            sync_doc(ws)
+            assert interviewer.post("/api/end").status_code == 200
+            with pytest.raises(WebSocketDisconnect):
+                while True:
+                    ws.receive_bytes()
+        assert cand.get("/api/me").json()["status"] == "ended"
+        with pytest.raises(WebSocketDisconnect):
+            cand.websocket_connect(ROOM).__enter__()
+        assert interviewer.get("/api/me").json()["status"] == "admitted"
+
+
 def sync_doc(ws) -> Doc:
     doc = Doc()
     ws.send_bytes(create_sync_message(doc))

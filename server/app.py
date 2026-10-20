@@ -56,7 +56,7 @@ console.log(greet("TypeScript"));
 class Session:
     name: str
     role: str  # "interviewer" | "candidate"
-    status: str  # "pending" | "admitted" | "denied"
+    status: str  # "pending" | "admitted" | "denied" | "ended"
     id: str = field(default_factory=lambda: secrets.token_urlsafe(8))
 
 
@@ -70,6 +70,7 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
         secure_cookies = not os.environ.get("INSECURE_COOKIES")
 
     sessions: dict[str, Session] = {}
+    sockets: dict[str, set[WebSocket]] = {}  # session token -> open sync websockets
     yserver = WebsocketServer(auto_clean_rooms=False, log=log)
 
     def current(conn: HTTPConnection) -> Session | None:
@@ -82,7 +83,12 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
         if s is None or s.status != "admitted":
             await websocket.close(1008)
             return
-        await yasgi(websocket.scope, websocket.receive, websocket.send)
+        token = websocket.cookies[COOKIE]
+        sockets.setdefault(token, set()).add(websocket)
+        try:
+            await yasgi(websocket.scope, websocket.receive, websocket.send)
+        finally:
+            sockets[token].discard(websocket)
 
     @asynccontextmanager
     async def lifespan(app: Starlette):
@@ -156,6 +162,15 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
                 return JSONResponse(me_json(s))
         raise HTTPException(404)
 
+    async def end(request: Request) -> Response:
+        require_interviewer(request)
+        for token, s in sessions.items():
+            if s.role == "candidate" and s.status in ("pending", "admitted"):
+                s.status = "ended"
+                for websocket in list(sockets.get(token, ())):
+                    await websocket.close(1008)
+        return JSONResponse({})
+
     return Starlette(
         routes=[
             Route("/api/login", login, methods=["POST"]),
@@ -163,6 +178,7 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
             Route("/api/me", me),
             Route("/api/pending", pending),
             Route("/api/admit/{id}", admit, methods=["POST"]),
+            Route("/api/end", end, methods=["POST"]),
             WebSocketRoute(ROOM, ws),
             Mount("/", StaticFiles(directory=STATIC_DIR, html=True, check_dir=False)),
         ],

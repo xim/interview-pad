@@ -4,8 +4,9 @@ import TsWorker from 'monaco-editor/language/typescript/ts.worker?worker';
 import { initVimMode } from 'monaco-vim';
 import { MonacoBinding } from 'y-monaco';
 import { WebsocketProvider } from 'y-websocket';
+import { removeAwarenessStates } from 'y-protocols/awareness';
 import * as Y from 'yjs';
-import { $, type Me } from './main';
+import { $, api, route, type Me } from './main';
 import { setupRun } from './run';
 
 self.MonacoEnvironment = {
@@ -23,7 +24,7 @@ export type Lang = keyof typeof LANGS;
 const COLORS = ['#e06c75', '#98c379', '#e5c07b', '#61afef', '#c678dd', '#56b6c2', '#d19a66'];
 const cssString = (s: string) => `"${s.replace(/["\\\n\r]/g, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"`;
 
-type User = { name: string };
+type User = { name: string; role: Me['role'] };
 
 export function startPad(me: Me) {
   const doc = new Y.Doc();
@@ -31,7 +32,7 @@ export function startPad(me: Me) {
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   const provider = new WebsocketProvider(url.href, 'pad', doc);
   const { awareness } = provider;
-  awareness.setLocalStateField('user', { name: me.name } satisfies User);
+  awareness.setLocalStateField('user', { name: me.name, role: me.role } satisfies User);
 
   const editor = monaco.editor.create($('editor'), {
     theme: 'vs-dark',
@@ -124,4 +125,20 @@ export function startPad(me: Me) {
   provider.on('status', ({ status }) => {
     $('conn').textContent = status === 'connected' ? '' : status;
   });
+  provider.on('connection-close', async () => {
+    const now = await api<Me>('me').catch(() => me);
+    if (now.status === 'admitted') return;
+    provider.destroy();
+    route(now);
+  });
+
+  const endButton = $<HTMLButtonElement>('end');
+  endButton.hidden = me.role !== 'interviewer';
+  endButton.onclick = async () => {
+    if (!confirm('End the interview? This disconnects all candidates.')) return;
+    await api('end', {});
+    // kicked clients can't announce leaving, and the server doesn't track awareness per socket
+    const candidates = [...awareness.getStates()].filter(([, s]) => s.user?.role === 'candidate').map(([id]) => id);
+    removeAwarenessStates(awareness, candidates, 'end');
+  };
 }
