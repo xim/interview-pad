@@ -28,7 +28,8 @@ export const LANGS = {
 } as const;
 export type Lang = keyof typeof LANGS;
 
-const COLORS = ['#e06c75', '#98c379', '#e5c07b', '#61afef', '#c678dd', '#56b6c2', '#d19a66'];
+const INTERVIEWER_COLOR = '#98c379';
+const CANDIDATE_COLORS = ['#61afef', '#e5c07b', '#c678dd', '#56b6c2', '#d19a66', '#e06c75'];
 const cssString = (s: string) => `"${s.replace(/["\\\n\r]/g, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"`;
 
 type User = { name: string; role: Me['role'] };
@@ -141,9 +142,10 @@ export function startPad(me: Me) {
       .filter(([, s]) => s.user)
       .map(([id, s]) => [id, s.user as User] as const)
       .sort(([a], [b]) => a - b);
-    // by position among connected clients, so all clients agree and colors don't collide;
+    // interviewers green, candidates by position among connected candidates (all clients agree, no collisions);
     // derived locally so remote awareness state never reaches the stylesheet unescaped
-    const colors = new Map(users.map(([id], i) => [id, COLORS[i % COLORS.length]]));
+    const candidates = users.filter(([, u]) => u.role !== 'interviewer').map(([id]) => id);
+    const colors = new Map(users.map(([id, u]) => [id, u.role === 'interviewer' ? INTERVIEWER_COLOR : CANDIDATE_COLORS[candidates.indexOf(id) % CANDIDATE_COLORS.length]]));
     const colorOf = (id: number) => colors.get(id)!;
     style.textContent = users
       .map(([id, u]) => `
