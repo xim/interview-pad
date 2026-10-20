@@ -107,14 +107,28 @@ try {
   await iv.waitForFunction((m) => editorText().includes(m), {}, marker);
   step('edit synced');
 
-  await iv.click('#vim');
+  const toggleSetting = async (page, id) => {
+    await page.click('#settings');
+    await page.click(`#${id}`);
+    await page.click('#settings-dialog button');
+  };
+  await toggleSetting(iv, 'vim');
   await iv.click('.view-lines');
   await iv.keyboard.press('Escape');
   await iv.keyboard.type('ggOvim_ok');
   await iv.keyboard.press('Escape');
   await cand.waitForFunction(() => editorText().startsWith('vim_ok'));
-  await iv.click('#vim');
+  await toggleSetting(iv, 'vim');
   step('vim mode edit synced');
+  await iv.click('#settings');
+  await iv.select('#theme', 'vs');
+  await iv.click('#settings-dialog button');
+  await iv.waitForSelector('.monaco-editor.vs');
+  if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT.replace('.png', '-light.png') });
+  await iv.click('#settings');
+  await iv.select('#theme', 'vs-dark');
+  await iv.click('#settings-dialog button');
+  step('theme setting');
   await runCase(cand, iv, 'ts', 'console.log([1, 2, 3].map((x: number) => x * 2), new Map([[1, "a"]]))', '[2,4,6] Map([[1,"a"]])');
   await runCase(iv, cand, 'ts', 'throw new Error("boom")', 'Uncaught Error: boom');
 
@@ -146,6 +160,16 @@ try {
   );
   await cand.keyboard.press('Escape');
   step('python completion (jedi)');
+  await toggleSetting(cand, 'completion');
+  await cand.click('.view-lines');
+  await cand.keyboard.press('End');
+  await cand.keyboard.down('Control');
+  await cand.keyboard.press('Space');
+  await cand.keyboard.up('Control');
+  await new Promise((r) => setTimeout(r, 2000));
+  if (await cand.$('.suggest-widget.visible .monaco-list-row')) throw new Error('suggestions shown with completion off');
+  await toggleSetting(cand, 'completion');
+  step('completion can be turned off');
 
   await runCase(iv, cand, 'cpp', null, 'Hello from C++: [3, 1, 2]', 120000);
   await runCase(iv, cand, 'cpp', 'int main() { return x; }', '[compilation failed]');

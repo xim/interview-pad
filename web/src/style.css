@@ -90,6 +90,23 @@ dialog h2 {
   font-size: 1.1rem;
 }
 
+dialog small {
+  color: var(--muted);
+  font-weight: normal;
+}
+
+#settings-dialog label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+#settings-dialog form {
+  justify-content: flex-end;
+  margin: 0;
+}
+
 
 
 .request {

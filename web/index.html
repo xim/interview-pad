@@ -34,6 +34,13 @@
       <h2>Join requests</h2>
       <div id="requests"></div>
     </dialog>
+    <dialog id="settings-dialog">
+      <h2>Settings <small>(just for you)</small></h2>
+      <label><input id="vim" type="checkbox"> Vim bindings</label>
+      <label><input id="completion" type="checkbox"> Completion suggestions</label>
+      <label>Editor theme <select id="theme"></select></label>
+      <form method="dialog"><button>Close</button></form>
+    </dialog>
     <div id="offline" hidden>Disconnected from the server: changes are not being shared. Reconnecting…</div>
     <main>
       <div id="left">
@@ -43,7 +50,7 @@
           <button id="run" title="Ctrl+Enter">Run</button>
           <button id="stop" hidden>Stop</button>
           <span id="participants"></span>
-          <label><input id="vim" type="checkbox"> Vim</label>
+          <button id="settings" class="secondary" title="Settings">⚙</button>
         </header>
         <div id="editor"></div>
         <div id="vim-status" hidden></div>

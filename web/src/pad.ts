@@ -1,7 +1,6 @@
 import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker';
 import TsWorker from 'monaco-editor/language/typescript/ts.worker?worker';
-import { initVimMode } from 'monaco-vim';
 import { MonacoBinding } from 'y-monaco';
 import { WebsocketProvider } from 'y-websocket';
 import { removeAwarenessStates } from 'y-protocols/awareness';
@@ -9,6 +8,7 @@ import * as Y from 'yjs';
 import { $, api, route, type Me } from './main';
 import { setupRun } from './run';
 import { registerPythonIntelligence } from './completion';
+import { settings, setupSettings } from './settings';
 
 self.MonacoEnvironment = {
   getWorker: (_id, label) => (label === 'typescript' || label === 'javascript' ? new TsWorker() : new EditorWorker()),
@@ -50,7 +50,7 @@ export function startPad(me: Me) {
     padding: { top: 16 }, // room for remote cursor labels on line 1
     fontSize: 14,
   });
-  registerPythonIntelligence(() => true);
+  registerPythonIntelligence(() => settings.completion);
   const models = {} as Record<Lang, monaco.editor.ITextModel>;
   for (const [lang, l] of Object.entries(LANGS) as [Lang, (typeof LANGS)[Lang]][]) {
     models[lang] = monaco.editor.createModel('', l.monaco, monaco.Uri.file(l.file));
@@ -122,21 +122,7 @@ export function startPad(me: Me) {
   state.observe(applyInput);
   applyInput();
 
-  const vimBox = $<HTMLInputElement>('vim');
-  let vim: { dispose(): void } | undefined;
-  const applyVim = () => {
-    vim?.dispose();
-    vim = vimBox.checked ? initVimMode(editor, $('vim-status')) : undefined;
-    $('vim-status').hidden = !vimBox.checked;
-    try {
-      localStorage.setItem('vim', vimBox.checked ? '1' : '0');
-    } catch {}
-  };
-  try {
-    vimBox.checked = localStorage.getItem('vim') === '1';
-  } catch {}
-  vimBox.onchange = applyVim;
-  applyVim();
+  setupSettings(editor);
 
   const style = document.head.appendChild(document.createElement('style'));
   const renderPeers = () => {
