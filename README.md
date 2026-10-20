@@ -18,8 +18,7 @@ podman run --rm -p 127.0.0.1:8080:8000 -e INTERVIEWER_PASSWORD=secret interview-
 
 - The host port is the `-p` mapping. The internal port can be changed with `-e PORT=9000 -p 127.0.0.1:8080:9000`.
 - Without `INTERVIEWER_PASSWORD`, a random password is generated and logged.
-- Session cookies are `Secure`. Browsers accept that over plain HTTP on `localhost`; for plain HTTP on any other
-  address, set `-e INSECURE_COOKIES=1`.
+- Session cookies are `Secure`: serve over HTTPS (browsers make an exception for `localhost`).
 - One instance per interview: run more on different ports, each with its own password.
 
 ## C/C++ IntelliSense (optional)

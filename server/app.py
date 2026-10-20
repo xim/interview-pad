@@ -79,14 +79,12 @@ class Session:
     id: str = field(default_factory=lambda: secrets.token_urlsafe(8))
 
 
-def create_app(password: str | None = None, secure_cookies: bool | None = None) -> Starlette:
+def create_app(password: str | None = None, secure_cookies: bool = True) -> Starlette:
     if password is None:
         password = os.environ.get("INTERVIEWER_PASSWORD")
     if not password:
         password = secrets.token_urlsafe(12)
         log.warning("INTERVIEWER_PASSWORD not set, generated: %s", password)
-    if secure_cookies is None:
-        secure_cookies = not os.environ.get("INSECURE_COOKIES")
 
     sessions: dict[str, Session] = {}
     sockets: dict[str, set[WebSocket]] = {}  # session token -> open sync websockets
