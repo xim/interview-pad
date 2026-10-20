@@ -163,8 +163,13 @@ export function startPad(me: Me) {
   awareness.on('change', renderPeers);
   renderPeers();
 
+  // y-websocket retries silently forever; make a lost connection impossible to miss
+  const showOffline = () => ($('offline').hidden = false);
+  let offlineTimer = setTimeout(showOffline, 1500);
   provider.on('status', ({ status }) => {
-    $('conn').textContent = status === 'connected' ? '' : status;
+    clearTimeout(offlineTimer);
+    if (status === 'connected') $('offline').hidden = true;
+    else offlineTimer = setTimeout(showOffline, 1500);
   });
   provider.on('connection-close', async () => {
     const now = await api<Me>('me').catch(() => me);

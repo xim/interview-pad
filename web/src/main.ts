@@ -9,14 +9,27 @@ class ApiError extends Error {
   }
 }
 
+let hasSession = false;
+
 export async function api<T>(path: string, body?: unknown): Promise<T> {
   const r = await fetch(`api/${path}`, body === undefined ? {} : {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  // sessions live in server memory, so a restart (or cleared cookie) silently invalidates ours
+  if (hasSession && (r.status === 401 || r.status === 403)) sessionLost();
   if (!r.ok) throw new ApiError(r.status, await r.text());
   return r.json();
+}
+
+const NOTICE = 'notice';
+
+function sessionLost() {
+  try {
+    sessionStorage.setItem(NOTICE, 'Your session ended (the server may have restarted). Please join or log in again.');
+  } catch {}
+  location.reload();
 }
 
 export const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -26,6 +39,7 @@ function show(id: 'landing' | 'waiting' | 'pad') {
 }
 
 export function route(me: Me) {
+  hasSession = true;
   if (me.status === 'admitted') return enterPad(me);
   show('waiting');
   if (me.status === 'denied' || me.status === 'ended') {
@@ -89,4 +103,10 @@ function onSubmit(formId: string, submit: (data: FormData) => Promise<Me>) {
 onSubmit('join-form', (d) => api<Me>('join', { name: d.get('name') }));
 onSubmit('login-form', (d) => api<Me>('login', { name: d.get('name'), password: d.get('password') }));
 
-api<Me>('me').then(route, () => show('landing'));
+api<Me>('me').then(route, () => {
+  show('landing');
+  try {
+    $('landing-error').textContent = sessionStorage.getItem(NOTICE) ?? '';
+    sessionStorage.removeItem(NOTICE);
+  } catch {}
+});

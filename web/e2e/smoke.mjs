@@ -4,11 +4,10 @@ import { spawn } from 'node:child_process';
 import puppeteer from 'puppeteer-core';
 
 const password = process.env.PASSWORD ?? 'pw';
+const port = 20000 + Math.floor(Math.random() * 10000);
 let server;
-let url = process.argv[2];
-if (!url) {
-  const port = 20000 + Math.floor(Math.random() * 10000);
-  url = `http://localhost:${port}/`;
+
+async function startServer() {
   server = spawn('uv', ['run', 'uvicorn', 'app:create_app', '--factory', '--port', String(port)], {
     cwd: new URL('../../server', import.meta.url),
     env: { ...process.env, INTERVIEWER_PASSWORD: password },
@@ -20,6 +19,9 @@ if (!url) {
     server.on('exit', reject);
   });
 }
+
+const url = process.argv[2] ?? `http://localhost:${port}/`;
+if (!process.argv[2]) await startServer();
 const browser = await puppeteer.launch({
   executablePath: process.env.CHROME ?? '/usr/bin/google-chrome',
   headless: !process.env.HEADFUL,
@@ -175,6 +177,17 @@ try {
   await cand.waitForFunction(() => document.querySelector('#waiting-text').textContent === 'The interview has ended.');
   await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 1);
   step('end interview kicks the candidate');
+
+  if (server) {
+    const stopped = new Promise((resolve) => server.once('exit', resolve));
+    server.kill();
+    await stopped;
+    await iv.waitForSelector('#offline:not([hidden])');
+    step('disconnect banner shown');
+    await startServer();
+    await iv.waitForFunction(() => document.querySelector('#landing-error').textContent.includes('session ended'), { timeout: 15000 });
+    step('lost session after server restart sends back to login');
+  }
 } catch (e) {
   for (const [label, page] of pages) {
     const dump = await page.evaluate(() => [document.querySelector('#run-status')?.textContent, document.querySelector('#output')?.textContent]);

@@ -135,8 +135,11 @@ dialog h2 {
   margin-right: 0.3rem;
 }
 
-#conn {
-  color: var(--error);
+#offline {
+  padding: 0.4rem 1rem;
+  background: #a1260d;
+  color: #fff;
+  font-weight: bold;
 }
 
 main {

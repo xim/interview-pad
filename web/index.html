@@ -34,6 +34,7 @@
       <h2>Join requests</h2>
       <div id="requests"></div>
     </dialog>
+    <div id="offline" hidden>Disconnected from the server: changes are not being shared. Reconnecting…</div>
     <main>
       <div id="left">
         <header class="bar">
@@ -42,7 +43,6 @@
           <button id="run" title="Ctrl+Enter">Run</button>
           <button id="stop" hidden>Stop</button>
           <span id="participants"></span>
-          <span id="conn"></span>
           <label><input id="vim" type="checkbox"> Vim</label>
         </header>
         <div id="editor"></div>
