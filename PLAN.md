@@ -166,3 +166,18 @@ Recommend `mod_deflate` for `application/wasm` (105 → 27 MB).
 4. C++: `-std=c++26 -O2 -Wall` (newest the bundled clang 22 accepts); exceptions stubbed.
 5. Monaco: VS Code-like editor, TS type errors/IntelliSense built in, and its bundled TS compiler does our transpile.
 6. Dark theme only (`vs-dark`, dark page CSS).
+
+## Queue (requested mid-implementation; in order)
+
+1. Containerfile + podman/Apache docs in README (plan item 9)
+2. C language option (same clang; `-std=c23`, `main.c`)
+3. User-editable compiler flags for C/C++: a shared text field per language, defaulting to
+   the current flags (`-std=… -O2 -Wall -Wextra`), so `-Werror`/`-pedantic`/etc. can be toggled.
+   Not applicable to Python/TS (no compile step with meaningful flags).
+4. Smoke script starts its own server (fresh state per run) instead of needing one running
+5. Polish: participant names wrap in the toolbar; remote cursor colors can collide (clientId % 7)
+
+## Questions for after the initial phase
+
+- Program arguments (argv) too, not just compiler flags? (cheap for C/C++/Python, n/a for TS)
+- Flags field: shared between participants (current plan) or per-person?
