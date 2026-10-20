@@ -2,6 +2,7 @@
 // (and their deps) from the Pyodide CDN, verified against the lock file, which is trimmed to what's hosted.
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { download } from './download.mjs';
 
 // Commonly used and small-ish; scipy/polars/matplotlib/sympy are left out for size, networkx needs matplotlib.
 const PACKAGES = [
@@ -35,9 +36,7 @@ for (const name of wanted) {
   const { file_name, sha256: expected } = lock.packages[name];
   const file = new URL(file_name, dest);
   if ((await readFile(file).then(sha256, () => null)) === expected) continue;
-  const r = await fetch(`https://cdn.jsdelivr.net/pyodide/v${version}/full/${file_name}`);
-  if (!r.ok) throw new Error(`${file_name}: HTTP ${r.status}`);
-  const buf = Buffer.from(await r.arrayBuffer());
+  const buf = await download(`https://cdn.jsdelivr.net/pyodide/v${version}/full/${file_name}`);
   if (sha256(buf) !== expected) throw new Error(`${file_name}: sha256 mismatch`);
   await writeFile(file, buf);
   console.log(`pyodide: fetched ${file_name}`);

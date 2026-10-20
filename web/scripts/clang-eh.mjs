@@ -2,6 +2,7 @@
 // libc++abi's throw/catch/personality) from llvm-project with -fwasm-exceptions into public/clang/libeh.a.
 import { commands } from '@yowasp/clang';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { download } from './download.mjs';
 
 const TAG = 'llvmorg-22.1.8';
 const SOURCES = [
@@ -30,12 +31,11 @@ const dest = new URL('../public/clang/', import.meta.url);
 const tree = { 'tag.c': TAG_SOURCE };
 for (const entry of SOURCES) {
   const [path, from] = Array.isArray(entry) ? entry : [entry, entry];
-  const r = await fetch(`https://raw.githubusercontent.com/llvm/llvm-project/${TAG}/${from}`);
-  if (!r.ok) throw new Error(`${from}: HTTP ${r.status}`);
+  const text = (await download(`https://raw.githubusercontent.com/llvm/llvm-project/${TAG}/${from}`)).toString();
   const parts = path.split('/');
   let dir = tree;
   for (const p of parts.slice(0, -1)) dir = dir[p] ??= {};
-  dir[parts.at(-1)] = await r.text();
+  dir[parts.at(-1)] = text;
 }
 
 const EH = ['-fwasm-exceptions', '-O2', '-DNDEBUG'];
