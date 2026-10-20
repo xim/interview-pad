@@ -20,6 +20,7 @@ log = logging.getLogger("uvicorn.error")
 
 COOKIE = "session"
 MAX_NAME = 40
+MAX_PENDING = 10  # anyone with the URL can ask to join
 STATIC_DIR = os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "web" / "dist")
 ROOM = "/ws/pad"  # y-websocket connects to <url>/<room>; pycrdt-websocket names rooms by path
 
@@ -157,7 +158,10 @@ def create_app(password: str | None = None, secure_cookies: bool | None = None) 
         return start_session(Session(parse_name(body, "Interviewer"), "interviewer", "admitted"))
 
     async def join(request: Request) -> Response:
-        return start_session(Session(parse_name(await json_body(request)), "candidate", "pending"))
+        name = parse_name(await json_body(request))
+        if sum(s.status == "pending" for s in sessions.values()) >= MAX_PENDING:
+            raise HTTPException(429, "Too many people are waiting to join. Try again later.")
+        return start_session(Session(name, "candidate", "pending"))
 
     async def me(request: Request) -> Response:
         s = current(request)

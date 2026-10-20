@@ -39,6 +39,7 @@ type RunState = {
   lang: Lang;
   phase?: string;
   exitCode?: number | null;
+  note?: string; // why there's no exit code, e.g. the time limit
   ms?: number;
 };
 
@@ -115,7 +116,7 @@ export function setupRun(opts: {
     const start = () => {
       started = performance.now();
       setRun({ phase: undefined });
-      timer ??= setTimeout(() => ctrl.abort(`killed: timeout after ${TIMEOUT_MS / 1000} s`), TIMEOUT_MS);
+      timer ??= setTimeout(() => ctrl.abort(`Killed: ran longer than the ${TIMEOUT_MS / 1000} s time limit`), TIMEOUT_MS);
     };
     doc.transact(() => {
       output.delete(0, output.length);
@@ -157,11 +158,12 @@ export function setupRun(opts: {
     clearTimeout(flushTimer);
     flush();
     abort = undefined;
-    setRun({ status: 'done', phase: undefined, exitCode, ms: Math.round(performance.now() - t0) });
+    const note = ctrl.signal.aborted ? String(ctrl.signal.reason) : undefined;
+    setRun({ status: 'done', phase: undefined, exitCode, note, ms: Math.round(performance.now() - t0) });
   }
 
   runButton.onclick = run;
-  stopButton.onclick = () => abort?.abort('killed: stopped');
+  stopButton.onclick = () => abort?.abort('Killed: stopped');
   opts.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, run);
 
   const render = () => {
@@ -176,7 +178,7 @@ export function setupRun(opts: {
         : r.status === 'running'
           ? `Runner disconnected${label}`
           : r.exitCode === null
-            ? `Aborted${label}`
+            ? `${r.note ?? 'Failed'}${label}`
             : `Exit ${r.exitCode} · ${r.ms} ms${label}`;
   };
   state.observe(render);

@@ -92,6 +92,15 @@ try {
   await iv.waitForSelector('#requests-dialog:not([open])');
   step('candidate admitted');
 
+  const late = await open('late joiner');
+  await late.type('#join-form input', 'Late');
+  await late.click('#join-form button');
+  await iv.waitForSelector('#request-banners .request');
+  if (await iv.$('#requests-dialog[open]')) throw new Error('second request should be a banner, not a modal');
+  await iv.click('#request-banners .request button.secondary');
+  await late.waitForFunction(() => document.querySelector('#waiting-text').textContent.includes('did not let you in'));
+  step('later join requests are banners');
+
   await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 2);
   step('participants: 2');
 
@@ -137,7 +146,7 @@ try {
   await cand.waitForSelector('#stop:not([hidden])');
   await iv.waitForSelector('#run[disabled]');
   await cand.click('#stop');
-  await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[killed: stopped]'));
+  await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[Killed: stopped]'));
   step('stop kills a hung run');
 
   await runCase(iv, cand, 'python', 'import sys; print("py", sum(range(10)), __name__); print("err", file=sys.stderr); sys.exit(3)', 'py 45 __main__\nerr\n');
@@ -148,7 +157,7 @@ try {
   await runCase(cand, iv, 'python', 'import scipy', "ModuleNotFoundError: No module named 'scipy'");
   await runCase(cand, iv, 'python', 'import pandas as pd; print(pd.DataFrame({"a": [1, 2]}).a.sum())', '3');
   await runCase(cand, iv, 'python', 'import pytest\ndef test_x(): assert 1 + 1 == 3\nif __name__ == "__main__": pytest.main(["-q", "main.py"])', '1 failed');
-  await runCase(cand, iv, 'python', 'while True: pass', '[killed: timeout after 10 s]');
+  await runCase(cand, iv, 'python', 'while True: pass', '[Killed: ran longer than the 10 s time limit]');
   await runCase(cand, iv, 'python', 'print("recovered")', 'recovered');
   await setCode(cand, 'import collections\ncollections.Coun');
   await cand.keyboard.down('Control');

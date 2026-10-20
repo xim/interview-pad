@@ -76,6 +76,14 @@ def test_admit_flow(app, interviewer, admit, status):
     assert interviewer.post(f"/api/admit/{pending[0]['id']}", json={"admit": True}).status_code == 404
 
 
+def test_pending_limit(app):
+    from app import MAX_PENDING
+
+    for i in range(MAX_PENDING):
+        assert TestClient(app).post("/api/join", json={"name": f"c{i}"}).status_code == 200
+    assert TestClient(app).post("/api/join", json={"name": "late"}).status_code == 429
+
+
 def test_candidate_cannot_admit(app, interviewer):
     cand = TestClient(app)
     cand.post("/api/join", json={"name": "Ada"})

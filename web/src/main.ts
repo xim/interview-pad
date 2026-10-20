@@ -57,6 +57,8 @@ async function enterPad(me: Me) {
 }
 
 let shownRequests = '';
+// Only the first request(s) get a modal; later ones are banners, so join spam can't keep popping modals.
+let modalUsed = false;
 
 async function pollRequests() {
   setTimeout(pollRequests, POLL_MS);
@@ -66,8 +68,12 @@ async function pollRequests() {
   shownRequests = ids;
   document.title = pending.length ? `(${pending.length}) Join request — interview-pad` : 'interview-pad';
   const dialog = $<HTMLDialogElement>('requests-dialog');
-  if (!pending.length) return dialog.close();
-  $('requests').replaceChildren(...pending.map(({ id, name }) => {
+  const box = modalUsed ? $('request-banners') : $('requests');
+  if (!pending.length) {
+    $('request-banners').replaceChildren();
+    return dialog.close();
+  }
+  box.replaceChildren(...pending.map(({ id, name }) => {
     const row = document.createElement('div');
     row.className = 'request';
     const label = document.createElement('span');
@@ -78,7 +84,7 @@ async function pollRequests() {
       if (!admit) b.className = 'secondary';
       b.onclick = async () => {
         row.remove();
-        if (!$('requests').children.length) dialog.close();
+        if (!modalUsed && !box.children.length) dialog.close();
         await api(`admit/${encodeURIComponent(id)}`, { admit });
       };
       return b;
@@ -86,8 +92,13 @@ async function pollRequests() {
     row.append(label, button('Admit', true), button('Deny', false));
     return row;
   }));
-  if (!dialog.open) dialog.showModal();
+  if (!modalUsed && !dialog.open) dialog.showModal();
 }
+
+$('requests-dialog').addEventListener('close', () => {
+  modalUsed = true;
+  shownRequests = ''; // re-render anything still pending as banners
+});
 
 function onSubmit(formId: string, submit: (data: FormData) => Promise<Me>) {
   $<HTMLFormElement>(formId).onsubmit = async (e) => {

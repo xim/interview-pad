@@ -133,6 +133,11 @@ dialog small {
   padding: 0.4rem 0;
 }
 
+#request-banners .request {
+  padding: 0.4rem 1rem;
+  background: #264f78;
+}
+
 .request span {
   flex: 1;
 }
