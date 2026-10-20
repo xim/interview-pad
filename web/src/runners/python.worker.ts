@@ -56,6 +56,11 @@ onmessage = async ({ data }) => {
     post(`Failed to load Python: ${e}\n`);
     return postMessage({ type: 'exit', code: 1 });
   }
+  // fetches only the bundled packages (see scripts/pyodide.mjs) that the code imports
+  await py.loadPackagesFromImports(data.src, {
+    messageCallback: () => postMessage({ type: 'status', text: 'Loading packages' }),
+    errorCallback: post,
+  });
   let stdin: string | undefined = data.stdin;
   py.setStdin({
     stdin: () => {

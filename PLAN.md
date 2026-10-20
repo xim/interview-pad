@@ -185,4 +185,4 @@ Answered: argv + stdin (up front, shared, Input tab) ✓; shared flags ✓; End 
 login rate limiting and server-enforced names: no (YAGNI).
 
 UB-catching default flags ✓. Pushing join requests over the Yjs socket: no (candidates must poll anyway).
-- Python packages (Pyodide ships ~357, e.g. pyyaml, numpy): self-host a chosen few?
+Python packages: a few bundled, lazily loaded ✓.

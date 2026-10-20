@@ -4,7 +4,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "check": "tsc --noEmit",
-    "postinstall": "mkdir -p public/pyodide && cp node_modules/pyodide/pyodide.mjs node_modules/pyodide/pyodide.asm.mjs node_modules/pyodide/pyodide.asm.wasm node_modules/pyodide/python_stdlib.zip node_modules/pyodide/pyodide-lock.json public/pyodide/",
+    "postinstall": "node scripts/pyodide.mjs",
     "e2e": "node e2e/smoke.mjs"
   },
   "type": "module",

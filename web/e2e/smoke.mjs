@@ -130,6 +130,8 @@ try {
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 3'));
   step('python exit code shared');
   await runCase(cand, iv, 'python', 'x = 1 / 0', 'ZeroDivisionError: division by zero');
+  await runCase(cand, iv, 'python', 'import numpy as np, yaml, tomllib; print(np.arange(4).sum(), yaml.safe_load("a: 1"), tomllib.loads("b = 2"))', "6 {'a': 1} {'b': 2}");
+  await runCase(cand, iv, 'python', 'import pandas', "ModuleNotFoundError: No module named 'pandas'");
   await runCase(cand, iv, 'python', 'while True: pass', '[killed: timeout after 10 s]');
   await runCase(cand, iv, 'python', 'print("recovered")', 'recovered');
 

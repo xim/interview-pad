@@ -65,4 +65,6 @@ node e2e/smoke.mjs http://localhost:8080/pad/   # or against a running instance 
   which catch many of them, but a trap carries no details. No ASan (no runtime).
 - C++: exceptions are not supported (no libunwind in the WASM sysroot); `throw` reports the type and aborts.
 - TS/JS: the program ends when the module finishes evaluating; pending timers are dropped.
+- Python: full stdlib plus bundled `numpy`, `pyyaml`, `sortedcontainers`, `regex`, `more-itertools`
+  (loaded on import; list in `web/scripts/pyodide.mjs`). Other third-party imports fail.
 - Run timeout: 10 s of execution (runtime download and compile time don't count). Output is capped at 64 KB.
