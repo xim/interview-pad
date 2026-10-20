@@ -42,7 +42,7 @@ onmessage = async ({ data }) => {
     const source = `main.${lang}`;
     const files: Record<string, string | Uint8Array> = { [source]: src, [`runtime.${lang}`]: RUNTIME };
     if (lang === 'cpp') files['libeh.a'] = await libeh!;
-    post(echo([name, ...flags, source, '-o', 'a.out']));
+    post(echo([name, ...flags, source]));
     // colors aren't on by default since this isn't a terminal; the output pane renders ANSI
     const args = ['-fcolor-diagnostics', '-fansi-escape-codes', ...HIDDEN_FLAGS[lang], ...flags, ...Object.keys(files), '-o', 'a.out'];
     compileStart = performance.now();

@@ -10,7 +10,7 @@ const STARTUP_FRAME = /^(__main_void|__main_argc_argv|_start)$/;
 function describeCrash(e: unknown) {
   const frames = String((e as Error)?.stack ?? '')
     .split('\n')
-    .map((l) => l.trim().match(/^at (?:\S+?\.wasm\.|wasm-function\[\d+\]\.)?(.*?)(?: \(wasm:.*\))?$/)?.[1])
+    .map((l) => l.trim().match(/^at (?:a\.out\.|wasm-function\[\d+\]\.)?(.*?)(?: \(wasm:.*\))?$/)?.[1]) // module is named after the output file
     .filter((f): f is string => !!f && !f.includes('.js'));
   const aborted = frames[0] === 'abort';
   const user = frames.filter((f) => !RUNTIME_FRAME.test(f));

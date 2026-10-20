@@ -225,7 +225,7 @@ try {
   await cand.keyboard.press('Enter');
   await iv.waitForFunction(() => document.querySelector('#flags').value.includes('-Werror'));
   step('flags synced');
-  await runCase(iv, cand, 'cpp', 'int main() { int unused; }', '> clang++ -std=c++26 -Wall -Werror main.cpp -o a.out');
+  await runCase(iv, cand, 'cpp', 'int main() { int unused; }', '> clang++ -std=c++26 -Wall -Werror main.cpp\n');
   await iv.waitForFunction(() => document.querySelector('#output').textContent.includes('[compilation failed]'));
   step('flags applied');
   await runCase(cand, iv, 'c', null, 'Hello from C\n');
