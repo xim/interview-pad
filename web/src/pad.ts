@@ -1,6 +1,7 @@
 import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker';
 import TsWorker from 'monaco-editor/language/typescript/ts.worker?worker';
+import { initVimMode } from 'monaco-vim';
 import { MonacoBinding } from 'y-monaco';
 import { WebsocketProvider } from 'y-websocket';
 import * as Y from 'yjs';
@@ -56,6 +57,22 @@ export function startPad(me: Me) {
   };
   state.observe(applyLang);
   applyLang();
+
+  const vimBox = $<HTMLInputElement>('vim');
+  let vim: { dispose(): void } | undefined;
+  const applyVim = () => {
+    vim?.dispose();
+    vim = vimBox.checked ? initVimMode(editor, $('vim-status')) : undefined;
+    $('vim-status').hidden = !vimBox.checked;
+    try {
+      localStorage.setItem('vim', vimBox.checked ? '1' : '0');
+    } catch {}
+  };
+  try {
+    vimBox.checked = localStorage.getItem('vim') === '1';
+  } catch {}
+  vimBox.onchange = applyVim;
+  applyVim();
 
   const style = document.head.appendChild(document.createElement('style'));
   const renderPeers = () => {

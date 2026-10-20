@@ -124,3 +124,16 @@ summary {
   white-space: nowrap;
   pointer-events: none;
 }
+
+#vim-status {
+  padding: 0.2rem 1rem;
+  font-family: monospace;
+  background: #252526;
+}
+
+#vim-status input {
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+}

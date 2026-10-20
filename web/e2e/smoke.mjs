@@ -56,6 +56,15 @@ try {
   await cand.keyboard.type(` # ${marker}`);
   await iv.waitForFunction((m) => editorText().includes(m), {}, marker);
   step('edit synced');
+
+  await iv.click('#vim');
+  await iv.click('.view-lines');
+  await iv.keyboard.press('Escape');
+  await iv.keyboard.type('ggOvim_ok');
+  await iv.keyboard.press('Escape');
+  await cand.waitForFunction(() => editorText().startsWith('vim_ok'));
+  await iv.click('#vim');
+  step('vim mode edit synced');
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
 } finally {
   await browser.close();
