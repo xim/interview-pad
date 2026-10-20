@@ -2,6 +2,8 @@
 
 Working doc. Delete or fold into README once implemented.
 
+**Status (2026-10-20):** commit plan and queue implemented; see the open questions at the end.
+
 ## Goals / constraints
 
 - Real-time collaborative editor for 1 interviewer + 1 candidate (more is allowed, but not optimized for).
@@ -145,7 +147,7 @@ Recommend `mod_deflate` for `application/wasm` (105 → 27 MB).
   interviewer logs in, candidate joins, interviewer admits, candidate types, the interviewer's editor sees it,
   run cpp/python/ts → both see the output. A run to verify autonomously; not CI.
 
-## Commit plan
+## Commit plan (done)
 
 1. `PLAN.md` (this) + README stub
 2. backend skeleton: Starlette app, sessions, login/join/me/pending/admit + tests
@@ -167,7 +169,7 @@ Recommend `mod_deflate` for `application/wasm` (105 → 27 MB).
 5. Monaco: VS Code-like editor, TS type errors/IntelliSense built in, and its bundled TS compiler does our transpile.
 6. Dark theme only (`vs-dark`, dark page CSS).
 
-## Queue (requested mid-implementation; in order)
+## Queue (requested mid-implementation; done)
 
 1. Containerfile + podman/Apache docs in README (plan item 9)
 2. C language option (same clang; `-std=c23`, `main.c`)
@@ -180,4 +182,8 @@ Recommend `mod_deflate` for `application/wasm` (105 → 27 MB).
 ## Questions for after the initial phase
 
 - Program arguments (argv) too, not just compiler flags? (cheap for C/C++/Python, n/a for TS)
-- Flags field: shared between participants (current plan) or per-person?
+- Flags field: shared between participants (implemented) or per-person?
+- stdin: worth it? Needs SharedArrayBuffer → COOP/COEP headers (server-side, easy) + a blocking-read bridge per runner.
+- Interviewer controls: kick a participant / lock editing / "end interview"? (none now; stopping the instance ends it)
+- Login brute force: no rate limiting; fine with a generated password, weak with a chosen one. Add a delay on failure?
+- Participant names in cursors/list are client-asserted (an admitted user could rename themselves). Enforce server-side?
