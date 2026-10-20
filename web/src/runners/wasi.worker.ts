@@ -32,7 +32,7 @@ type Message = { wasm: Uint8Array<ArrayBuffer>; args: string[]; stdin: string };
 
 onmessage = async ({ data: { wasm, args, stdin } }: MessageEvent<Message>) => {
   const stdinFile = new OpenFile(new File(new TextEncoder().encode(stdin)));
-  const wasi = new WASI(['main', ...args], [], [stdinFile, output(), output()]);
+  const wasi = new WASI(['./a.out', ...args], [], [stdinFile, output(), output()]);
   const instance = await WebAssembly.instantiate(await WebAssembly.compile(wasm), { wasi_snapshot_preview1: wasi.wasiImport });
   const exports = instance.exports as {
     __ip_flush?: () => void;

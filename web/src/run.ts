@@ -150,9 +150,8 @@ export function setupRun(opts: {
       write(`\n\x1b[1;31m[${ctrl.signal.aborted ? ctrl.signal.reason : `error: ${e instanceof Error ? e.message : e}`}]\x1b[0m\n`);
     }
     // timer is only set once the program itself started (not on compile errors)
-    if (timer && exitCode !== null) {
-      const color = exitCode ? '\x1b[1;31m' : '\x1b[32m';
-      write(`${color}Program exited with code ${exitCode}\x1b[0m \x1b[2m(${Math.round(performance.now() - started)} ms)\x1b[0m\n`);
+    if (timer && exitCode) {
+      write(`\x1b[1;31mProgram exited with code ${exitCode}\x1b[0m \x1b[2m(${Math.round(performance.now() - started)} ms)\x1b[0m\n`);
     }
     clearTimeout(timer);
     clearTimeout(flushTimer);
