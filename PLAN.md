@@ -100,7 +100,7 @@ A participants list is built from awareness.
 4. Timeout of 10 s (shared constant) → terminate the worker, append `[killed: timeout]`. A Stop button (runner only) does the same.
 
 Runners (all in Web Workers, one module per language, common message protocol `{type: out|err|exit, ...}`):
-- **cpp**: a long-lived compiler worker (`runClang(['clang++','-std=c++23','-O2','-Wall','main.cc','stub.cc', ...])`),
+- **cpp**: a long-lived compiler worker (`runClang(['clang++','-std=c++26','-O2','-Wall','main.cc','stub.cc', ...])`),
   then the binary runs in a **separate disposable worker** with the WASI shim, so a hung program doesn't cost a compiler reload.
   Download starts when C++ is selected (with a progress bar).
 - **python**: a long-lived Pyodide worker. Each run uses fresh globals. Timeout → terminate, recreate lazily.
@@ -158,11 +158,11 @@ Recommend `mod_deflate` for `application/wasm` (105 → 27 MB).
 9. Containerfile + podman/Apache docs in README
 10. E2E smoke script
 
-## Open questions (defaults chosen; I'll proceed with these unless told otherwise)
+## Decisions (answered)
 
-1. Interviewer auth = a shared password from env (auto-generated if unset). OK? (Alternative: a one-time secret URL printed at startup.)
-2. Multiple candidates can be admitted (e.g. a panel). No kick feature. OK?
-3. Language switch is shared (both see the same language). OK?
-4. C++ standard `-std=c++23 -O2 -Wall`, exceptions stubbed (throw = abort with a message). OK?
-5. Monaco (VS Code feel, TS IntelliSense) over CodeMirror 6 (lighter). OK?
-6. No dark/light toggle; follow the OS theme. OK?
+1. Interviewer auth: shared password from env (auto-generated if unset). Override per podman run; spawn one instance per interview (port/key per instance).
+2. Full broadcast; any number of candidates, each must be admitted by the interviewer. No kick.
+3. Language switch is shared.
+4. C++: `-std=c++26 -O2 -Wall` (newest the bundled clang 22 accepts); exceptions stubbed.
+5. Monaco: VS Code-like editor, TS type errors/IntelliSense built in, and its bundled TS compiler does our transpile.
+6. Dark theme only (`vs-dark`, dark page CSS).
