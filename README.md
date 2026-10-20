@@ -4,7 +4,8 @@ Minimal real-time collaborative code editor for interviews.
 Shared editor with live cursors; C, C++, Python and TypeScript run **in the browser** (WASM) of whoever clicks Run,
 and the output is shared. Python backend; one instance per interview; in-memory only.
 
-Flow: the interviewer logs in with a password; the candidate joins with a name and waits until the interviewer admits them.
+Flow: the interviewer logs in with a password (and optional display name); the candidate joins with a name and waits
+until the interviewer admits them. "End interview" disconnects all candidates.
 
 Design and status: [PLAN.md](PLAN.md).
 
@@ -57,7 +58,11 @@ node e2e/smoke.mjs http://localhost:8080/pad/   # or against a running instance 
 
 ## Limitations
 
-- No stdin (`input()`, `std::cin` see EOF).
+- stdin and arguments are set up front in the shared Input tab; there is no interactive stdin.
+  TS gets `process.argv` and `prompt()` (next stdin line, `null` at EOF).
+- C/C++: WASM has no memory protection inside its linear memory, so null dereferences and out-of-bounds
+  accesses don't crash. `-fsanitize=undefined -fsanitize-trap=undefined` and
+  `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST` make many of them trap. No ASan (no runtime).
 - C++: exceptions are not supported (no libunwind in the WASM sysroot); `throw` reports the type and aborts.
 - TS/JS: the program ends when the module finishes evaluating; pending timers are dropped.
 - Run timeout: 10 s of execution (runtime download and compile time don't count). Output is capped at 64 KB.
