@@ -63,7 +63,8 @@ node e2e/smoke.mjs http://localhost:8080/pad/   # or against a running instance 
 - C/C++: WASM has no memory protection inside its linear memory, so null dereferences and out-of-bounds
   accesses don't fault by themselves. UBSan (with our own handlers, `web/src/runners/runtime.c`) and, for C++,
   libc++ hardening are always enabled and report the problem; crashes print a backtrace. No ASan (no runtime).
-- C++: exceptions are not supported (no libunwind in the WASM sysroot); `throw` reports the type and aborts.
+- C++: exceptions work (WASM exception handling; runtime built from llvm-project by `web/scripts/clang-eh.mjs`),
+  except ones thrown from inside the prebuilt libc++ library (e.g. `std::stoi`), which abort with a message.
 - TS/JS: the program ends when the module finishes evaluating; pending timers are dropped.
 - Python: full stdlib plus a set of bundled packages (numpy, pandas, pydantic, pytest, pyyaml, rich, …; loaded
   on import; list in `web/scripts/pyodide.mjs`). Other third-party imports fail.

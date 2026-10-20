@@ -2,7 +2,7 @@
 // - UBSan handlers: the sysroot has no sanitizer runtime, so report "file:line:col: runtime error" here.
 //   Built with -fno-sanitize-recover=all, so only the noreturn variants are needed. Exact arities matter:
 //   on WASM a signature mismatch links to a trapping stub instead of failing.
-// - C++: the sysroot has no libunwind, so `throw` reports the exception type and aborts.
+// - Crash helpers exported for wasi.worker.ts.
 #pragma clang diagnostic ignored "-Weverything"
 
 #include <stdint.h>
@@ -84,18 +84,31 @@ EXTERN_C NO_UBSAN __attribute__((noreturn)) void __ubsan_handle_type_mismatch_v1
     report(&d->loc, what);
 }
 
+// Called by wasi.worker.ts after a crash, so buffered output isn't lost.
+EXTERN_C __attribute__((export_name("__ip_flush"))) void __ip_flush(void) { fflush(NULL); }
+
 #ifdef __cplusplus
+#include <exception>
 #include <typeinfo>
 
+extern "C" void* __cxa_begin_catch(void*) noexcept;
+extern "C" std::type_info* __cxa_current_exception_type();
 extern "C" char* __cxa_demangle(const char*, char*, size_t*, int*);
 
-extern "C" void* __cxa_allocate_exception(size_t size) noexcept { return malloc(size); }
-
-extern "C" [[noreturn]] void __cxa_throw(void*, std::type_info* type, void (*)(void*)) {
+// With wasm exceptions an uncaught one leaves main as a JS exception instead of reaching std::terminate;
+// wasi.worker.ts hands its payload here to print what terminate would have.
+extern "C" __attribute__((export_name("__ip_uncaught"))) void __ip_uncaught(void* unwind_exception) {
+    __cxa_begin_catch(unwind_exception);
+    const std::type_info* type = __cxa_current_exception_type();
     int status;
     char* name = __cxa_demangle(type->name(), nullptr, nullptr, &status);
     fflush(stdout);
-    fprintf(stderr, "terminate: uncaught exception of type %s (exceptions are not supported here)\n", name ? name : type->name());
-    abort();
+    fprintf(stderr, "terminate called after throwing an instance of '%s'\n", name ? name : type->name());
+    try {
+        throw;
+    } catch (const std::exception& e) {
+        fprintf(stderr, "  what():  %s\n", e.what());
+    } catch (...) {
+    }
 }
 #endif

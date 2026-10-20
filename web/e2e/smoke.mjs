@@ -173,7 +173,9 @@ try {
 
   await runCase(iv, cand, 'cpp', null, 'Hello from C++: [3, 1, 2]', 120000);
   await runCase(iv, cand, 'cpp', 'int main() { return x; }', '[compilation failed]');
-  await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v; return v.at(1); }', 'uncaught exception of type std::out_of_range');
+  await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v; return v.at(1); }', "terminate called after throwing an instance of 'std::out_of_range'\n  what():  vector\n");
+  await runCase(cand, iv, 'cpp', '#include <cstdio>\n#include <stdexcept>\nint main() { try { throw std::runtime_error("boom"); } catch (const std::exception& e) { std::puts(e.what()); } }', 'boom');
+  await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::printf("buffered "); throw 42; }', "buffered terminate called after throwing an instance of 'int'");
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
   step('cpp exit code shared');

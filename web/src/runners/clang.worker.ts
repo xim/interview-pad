@@ -8,6 +8,9 @@ import RUNTIME from './runtime.c?raw';
 const HIDDEN = {
   c: ['-fsanitize=undefined', '-fno-sanitize-recover=all'],
   cpp: [
+    // exception runtime built by scripts/clang-eh.mjs; the tag export lets wasi.worker.ts report uncaught ones
+    '-fwasm-exceptions',
+    '-Wl,--export=__cpp_exception',
     '-fsanitize=undefined',
     '-fno-sanitize-recover=all',
     '-fexperimental-library',
@@ -28,7 +31,16 @@ const fetchProgress = ({ doneLength, totalLength }: { doneLength: number; totalL
   postMessage({ type: 'status', text: pct < 100 ? `Downloading compiler ${pct}%` : 'Compiling' });
 };
 
+let libeh: Promise<Uint8Array> | undefined;
+
 onmessage = async ({ data }) => {
+  if (data.init) {
+    libeh = fetch(`${data.init}libeh.a`).then(async (r) => {
+      if (!r.ok) throw new Error(`libeh.a: HTTP ${r.status}`);
+      return new Uint8Array(await r.arrayBuffer());
+    });
+    return;
+  }
   if (data.preload) {
     try {
       await commands.clang(['--version'], {}, { stdout: null, fetchProgress });
@@ -40,7 +52,8 @@ onmessage = async ({ data }) => {
     const { lang, src, flags } = data as { lang: 'c' | 'cpp'; src: string; flags: string[] };
     const name = lang === 'c' ? 'clang' : 'clang++';
     const source = `main.${lang}`;
-    const files = { [source]: src, [`runtime.${lang}`]: RUNTIME };
+    const files: Record<string, string | Uint8Array> = { [source]: src, [`runtime.${lang}`]: RUNTIME };
+    if (lang === 'cpp') files['libeh.a'] = await libeh!;
     post(`$ ${name} ${flags.join(' ')} ${source}\n`);
     const args = [...HIDDEN[lang], ...flags, ...Object.keys(files), '-o', 'main.wasm'];
     const out = await commands[name](args, files, { stdout: write, stderr: write, fetchProgress });

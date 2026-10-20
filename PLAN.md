@@ -195,5 +195,5 @@ Python packages: a few bundled, lazily loaded ✓.
 3. ✓ Jedi completion for Python
 4. ✓ Settings cogwheel: Vim bindings, completion suggestions on/off, Monaco theme
 5. ✓ Interviewer is always a friendly green; candidates get the other colors
-6. C++ exceptions: build libunwind + libc++abi EH parts with -fwasm-exceptions, or fail loudly at compile time
+6. ✓ C++ exceptions: libunwind + libc++abi EH parts built with -fwasm-exceptions at npm install
 7. clangd (WASM) for C/C++ completion: hard look
