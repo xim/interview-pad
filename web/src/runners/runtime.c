@@ -87,7 +87,7 @@ EXTERN_C NO_UBSAN __attribute__((noreturn)) void __ubsan_handle_type_mismatch_v1
 // Called by wasi.worker.ts after a crash, so buffered output isn't lost.
 EXTERN_C __attribute__((export_name("__ip_flush"))) void __ip_flush(void) { fflush(NULL); }
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__cpp_exceptions)
 #include <exception>
 #include <typeinfo>
 

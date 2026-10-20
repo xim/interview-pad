@@ -10,7 +10,7 @@ const HIDDEN = {
   cpp: [
     // exception runtime built by scripts/clang-eh.mjs; the tag export lets wasi.worker.ts report uncaught ones
     '-fwasm-exceptions',
-    '-Wl,--export=__cpp_exception',
+    '-Wl,--export-if-defined=__cpp_exception', // absent if the user adds -fno-exceptions
     '-fsanitize=undefined',
     '-fno-sanitize-recover=all',
     '-fexperimental-library',

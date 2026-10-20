@@ -3,7 +3,7 @@ import { ConsoleStdout, File, OpenFile, WASI } from '@bjorn3/browser_wasi_shim';
 const SIGABRT_EXIT = 134;
 
 // Runtime frames above the user's code (abort and its reporters) and below main (libc startup).
-const RUNTIME_FRAME = /^(abort|__cxa_throw|__ubsan_handle_\w+|report|std::__2::__libcpp_verbose_abort\(.*)$/;
+const RUNTIME_FRAME = /^(abort|__ubsan_handle_\w+|report(\(.*)?|std::__2::__libcpp_verbose_abort\(.*)$/;
 const STARTUP_FRAME = /^(__main_void|__main_argc_argv|_start)$/;
 
 // WASM traps carry no signal, so classify from the message and the (name-section) stack.
