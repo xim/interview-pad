@@ -16,7 +16,8 @@ function describeCrash(e: unknown) {
   const user = frames.filter((f) => !RUNTIME_FRAME.test(f));
   const end = user.findIndex((f) => STARTUP_FRAME.test(f));
   const message = e instanceof Error ? e.message : String(e);
-  const summary = aborted ? 'Aborted' : `Crashed: ${message === 'unreachable' ? 'trap (unreachable code)' : message}`;
+  const hint = /out of bounds/.test(message) && /memory|index/.test(message) ? ' (stack overflow past 8 MB, or a wild pointer?)' : '';
+  const summary = aborted ? 'Aborted' : `Crashed: ${message === 'unreachable' ? 'trap (unreachable code)' : message}${hint}`;
   const trace = (end < 0 ? user : user.slice(0, end))
     .map((f) => `    at ${f === '__original_main' ? 'main' : f}\n`) // main(void) is renamed by the toolchain
     .join('');

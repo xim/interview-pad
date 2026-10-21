@@ -240,6 +240,8 @@ try {
   await runCase(cand, iv, 'c', '#include <stdlib.h>\n__attribute__((noinline)) void f(void) { abort(); }\nint main(void) { f(); }', '[Aborted]\n    at f\n    at main\n');
   await runCase(cand, iv, 'c', '#include <stdio.h>\nint main(int argc, char** argv) { int* p = argc > 5 ? &argc : 0; printf("%d", *p); }', 'main.c:2:79: runtime error: load of null pointer of type \'int\'');
   await runCase(cand, iv, 'c', 'int f(int n) { return f(n + 1) + 1; }\nint main(void) { return f(0); }', '[Crashed: Maximum call stack size exceeded]');
+  await runCase(cand, iv, 'c', '#include <stdio.h>\n#include <string.h>\nint main(void) { char big[1 << 20]; memset(big, 1, sizeof big); printf("%d", big[12345]); }', '1');
+  await runCase(cand, iv, 'c', '#include <stdio.h>\n#include <string.h>\nint main(void) { char big[16 << 20]; memset(big, 1, sizeof big); printf("%d", big[12345]); }', 'stack overflow past 8 MB');
 
   await cand.click('.tab[data-tab=input]');
   await cand.type('#args', 'a "b c"');
