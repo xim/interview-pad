@@ -215,6 +215,14 @@ try {
     await cand.keyboard.press('Enter');
     await iv.waitForFunction(() => editorText().includes('#include <cstdio>') || editorText().includes('#include <stdio.h>'));
     step('cpp header insertion (clangd)');
+    await setCode(cand, '#include <vector>\nint main() { std::vector<int> v{1, 2, 3}; }');
+    const hints = () => cand.evaluate(() => editorText().includes('[0]='));
+    await new Promise((r) => setTimeout(r, 3000));
+    if (await hints()) throw new Error('inlay hints shown by default');
+    await toggleSetting(cand, 'inlay-hints');
+    await cand.waitForFunction(() => editorText().includes('[0]='), { timeout: 30000 });
+    await toggleSetting(cand, 'inlay-hints');
+    step('inlay hints off by default, on via settings');
   } else {
     console.log('- clangd not built, skipping its checks');
   }

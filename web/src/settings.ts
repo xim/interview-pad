@@ -4,12 +4,12 @@ import { configureClangd } from './clangd';
 import { $ } from './main';
 
 // Per viewer, remembered in localStorage.
-type Settings = { vim: boolean; completion: boolean; theme: string };
+type Settings = { vim: boolean; completion: boolean; inlayHints: boolean; theme: string };
 
 const KEY = 'settings';
 const THEMES = { 'vs-dark': 'Dark', vs: 'Light', 'hc-black': 'High contrast dark', 'hc-light': 'High contrast light' };
 
-export const settings: Settings = { vim: false, completion: true, theme: 'vs-dark' };
+export const settings: Settings = { vim: false, completion: true, inlayHints: false, theme: 'vs-dark' };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(KEY) ?? '{}'));
 } catch {}
@@ -18,6 +18,7 @@ export function setupSettings(editor: monaco.editor.IStandaloneCodeEditor) {
   const dialog = $<HTMLDialogElement>('settings-dialog');
   const vimBox = $<HTMLInputElement>('vim');
   const completionBox = $<HTMLInputElement>('completion');
+  const inlayHintsBox = $<HTMLInputElement>('inlay-hints');
   const themeSelect = $<HTMLSelectElement>('theme');
   themeSelect.replaceChildren(...Object.entries(THEMES).map(([id, label]) => new Option(label, id)));
   $('settings').onclick = () => dialog.showModal();
@@ -34,6 +35,8 @@ export function setupSettings(editor: monaco.editor.IStandaloneCodeEditor) {
       suggestOnTriggerCharacters: on,
       parameterHints: { enabled: on },
       wordBasedSuggestions: on ? 'matchingDocuments' : 'off',
+      // e.g. clangd's `v{[0]=1}` and `println(fmt: ...)`
+      inlayHints: { enabled: settings.inlayHints ? 'on' : 'off' },
     });
     // Python's providers check settings.completion themselves (completion.ts); clangd's worker drops requests
     configureClangd({ completion: on });
@@ -46,6 +49,7 @@ export function setupSettings(editor: monaco.editor.IStandaloneCodeEditor) {
     monaco.editor.setTheme(settings.theme);
     vimBox.checked = settings.vim;
     completionBox.checked = settings.completion;
+    inlayHintsBox.checked = settings.inlayHints;
     themeSelect.value = settings.theme;
   };
   const update = (patch: Partial<Settings>) => {
@@ -57,6 +61,7 @@ export function setupSettings(editor: monaco.editor.IStandaloneCodeEditor) {
   };
   vimBox.onchange = () => update({ vim: vimBox.checked });
   completionBox.onchange = () => update({ completion: completionBox.checked });
+  inlayHintsBox.onchange = () => update({ inlayHints: inlayHintsBox.checked });
   themeSelect.onchange = () => update({ theme: themeSelect.value });
   apply();
 }
