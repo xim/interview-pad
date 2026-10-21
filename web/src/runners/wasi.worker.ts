@@ -1,6 +1,7 @@
 import { ConsoleStdout, File, OpenFile, WASI } from '@bjorn3/browser_wasi_shim';
 
 const SIGABRT_EXIT = 134;
+const SIGSEGV_EXIT = 139;
 
 // Runtime frames above the user's code (abort and its reporters) and below main (libc startup).
 const RUNTIME_FRAME = /^(abort|__ubsan_handle_\w+|report(\(.*)?|std::__2::__libcpp_verbose_abort\(.*)$/;
@@ -16,12 +17,17 @@ function describeCrash(e: unknown) {
   const user = frames.filter((f) => !RUNTIME_FRAME.test(f));
   const end = user.findIndex((f) => STARTUP_FRAME.test(f));
   const message = e instanceof Error ? e.message : String(e);
-  const hint = /out of bounds/.test(message) && /memory|index/.test(message) ? ' (stack overflow past 8 MB, or a wild pointer?)' : '';
-  const summary = aborted ? 'Aborted' : `Crashed: ${message === 'unreachable' ? 'trap (unreachable code)' : message}${hint}`;
+  // out-of-bounds memory or function-table access (wording differs per browser) is what a native build would segfault on
+  const segfault = /out of bounds/.test(message);
+  const summary = aborted
+    ? 'Aborted'
+    : segfault
+      ? 'Segmentation fault'
+      : `Crashed: ${message === 'unreachable' ? 'trap (unreachable code)' : message}`;
   const trace = (end < 0 ? user : user.slice(0, end))
     .map((f) => `    at ${f === '__original_main' ? 'main' : f}\n`) // main(void) is renamed by the toolchain
     .join('');
-  return `\n\x1b[1;31m[${summary}]\x1b[0m\n${trace}`;
+  return { text: `\n\x1b[1;31m[${summary}]\x1b[0m\n${trace}`, code: segfault && !aborted ? SIGSEGV_EXIT : SIGABRT_EXIT };
 }
 
 const output = () => {
@@ -54,8 +60,9 @@ onmessage = async ({ data: { wasm, args, stdin } }: MessageEvent<Message>) => {
         return postMessage({ type: 'exit', code: SIGABRT_EXIT });
       }
     } catch {}
-    postMessage({ type: 'out', text: describeCrash(e) });
-    code = SIGABRT_EXIT;
+    const crash = describeCrash(e);
+    postMessage({ type: 'out', text: crash.text });
+    code = crash.code;
   }
   postMessage({ type: 'exit', code });
 };
