@@ -35,6 +35,7 @@ log = logging.getLogger("uvicorn.error")
 COOKIE = "session"
 MAX_NAME = 40
 MAX_PENDING = 10  # anyone with the URL can ask to join
+MAX_DEMOS = 20  # solo sandboxes, each with its own room; the oldest is evicted
 STATIC_DIR = os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "web" / "dist")
 ROOM = "/ws/pad"  # y-websocket connects to <url>/<room name>
 
@@ -167,7 +168,7 @@ class Room:
 @dataclass
 class Session:
     name: str
-    role: str  # "interviewer" | "candidate"
+    role: str  # "interviewer" | "candidate" | "demo"
     status: str  # "pending" | "admitted" | "denied" | "ended"
     id: str = field(default_factory=lambda: secrets.token_urlsafe(8))
 
@@ -181,12 +182,16 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
 
     sessions: dict[str, Session] = {}
     sockets: dict[str, set[WebSocket]] = {}  # session token -> open sync websockets
-    doc = Doc()
-    for lang, code in TEMPLATES.items():
-        doc[f"code:{lang}"] = Text(code)
-    doc["state"] = Map({"lang": "cpp"})
-    doc["output"] = Text()
-    room = Room(doc)
+    def new_room() -> Room:
+        doc = Doc()
+        for lang, code in TEMPLATES.items():
+            doc[f"code:{lang}"] = Text(code)
+        doc["state"] = Map({"lang": "cpp"})
+        doc["output"] = Text()
+        return Room(doc)
+
+    room = new_room()
+    demo_rooms: dict[str, Room] = {}  # demo session id -> its private room, oldest first
 
     def current(conn: HTTPConnection) -> Session | None:
         return sessions.get(conn.cookies.get(COOKIE, ""))
@@ -200,7 +205,7 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
         sockets.setdefault(token, set()).add(websocket)
         await websocket.accept()
         try:
-            await room.serve(websocket)
+            await demo_rooms.get(s.id, room).serve(websocket)
         finally:
             sockets[token].discard(websocket)
 
@@ -248,6 +253,16 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
             raise HTTPException(429, "Too many people are waiting to join. Try again later.")
         return start_session(Session(name, "candidate", "pending"))
 
+    async def demo(request: Request) -> Response:
+        s = Session("Demo", "demo", "admitted")
+        demo_rooms[s.id] = new_room()
+        if len(demo_rooms) > MAX_DEMOS:
+            evicted = next(iter(demo_rooms))
+            del demo_rooms[evicted]
+            for token in [t for t, other in sessions.items() if other.id == evicted]:
+                del sessions[token]
+        return start_session(s)
+
     async def me(request: Request) -> Response:
         s = current(request)
         if s is None:
@@ -286,6 +301,7 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
             Route("/api/pending", pending),
             Route("/api/admit/{id}", admit, methods=["POST"]),
             Route("/api/end", end, methods=["POST"]),
+            Route("/api/demo", demo, methods=["POST"]),
             WebSocketRoute(ROOM, ws),
             Mount("/", Static(directory=static_dir, html=True, check_dir=False)),
         ],

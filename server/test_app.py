@@ -12,6 +12,7 @@ from pycrdt import (
     YSyncMessageType,
     create_awareness_message,
     create_sync_message,
+    create_update_message,
     handle_sync_message,
     read_message,
 )
@@ -186,6 +187,32 @@ def test_ws_sync_seeded_doc(app):
             doc = sync_doc(ws)
         assert str(doc.get("code:python", type=Text)) == TEMPLATES["python"]
         assert doc.get("state", type=Map)["lang"] == "cpp"
+
+
+def test_demo_gets_a_private_room(app, interviewer):
+    with TestClient(app) as d:
+        assert d.post("/api/demo").json() == {"name": "Demo", "role": "demo", "status": "admitted"}
+        assert d.get("/api/pending").status_code == 403
+        assert interviewer.get("/api/pending").json() == []  # not a join request
+        with d.websocket_connect(ROOM) as ws:
+            mine = sync_doc(ws)
+            assert str(mine.get("code:python", type=Text)) == TEMPLATES["python"]
+            updates = []
+            mine.observe(lambda event: updates.append(event.update))
+            mine.get("state", type=Map)["lang"] = "python"
+            ws.send_bytes(create_update_message(updates[0]))
+        with interviewer.websocket_connect(ROOM) as ws:
+            assert sync_doc(ws).get("state", type=Map)["lang"] == "cpp"  # the interview room is untouched
+
+
+def test_demo_rooms_are_capped(app):
+    from app import MAX_DEMOS
+
+    first = TestClient(app)
+    first.post("/api/demo")
+    for _ in range(MAX_DEMOS):
+        TestClient(app).post("/api/demo")
+    assert first.get("/api/me").status_code == 401  # evicted
 
 
 def receive_awareness(ws, into: Awareness) -> None:

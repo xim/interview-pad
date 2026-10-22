@@ -1,4 +1,4 @@
-export type Me = { name: string; role: 'interviewer' | 'candidate'; status: 'pending' | 'admitted' | 'denied' | 'ended' };
+export type Me = { name: string; role: 'interviewer' | 'candidate' | 'demo'; status: 'pending' | 'admitted' | 'denied' | 'ended' };
 type Pending = { id: string; name: string };
 
 const POLL_MS = 1000;
@@ -117,6 +117,7 @@ function onSubmit(formId: string, submit: (data: FormData) => Promise<Me>) {
 
 onSubmit('join-form', (d) => api<Me>('join', { name: d.get('name') }));
 onSubmit('login-form', (d) => api<Me>('login', { name: d.get('name'), password: d.get('password') }));
+$('demo').onclick = async () => route(await api<Me>('demo', {}));
 
 api<Me>('me').then(route, () => {
   show('landing');

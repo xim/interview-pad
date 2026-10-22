@@ -69,6 +69,10 @@ summary {
   cursor: pointer;
 }
 
+#landing small {
+  color: var(--muted);
+}
+
 .error {
   color: var(--error);
 }

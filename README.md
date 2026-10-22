@@ -7,6 +7,7 @@ and the output is shared. Python backend, one instance per interview, in-memory 
 
 - Interviewer logs in with a password; candidates join with a name and wait to be admitted. "End interview"
   disconnects all candidates.
+- "Try it alone": a private sandbox without a password (own room, up to 20 at a time).
 - Shared Monaco editor with live cursors/selections; per-person Vim bindings, completion toggle and theme.
 - C, C++ (clang 22, C++26 by default, exceptions), Python 3.14 (Pyodide, numpy/pandas/pytest/… on import) and
   TypeScript. Shared compiler flags, program arguments and stdin.

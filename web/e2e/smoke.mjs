@@ -289,6 +289,12 @@ try {
   await runCase(iv, cand, 'cpp', '#include <iostream>\nint main(int argc, char** argv) { int a, b; std::cin >> a >> b; std::cout << argc << argv[2] << a + b << "\\n"; }', '3b c7');
   await runCase(iv, cand, 'ts', 'console.log(process.argv.slice(2), Number(prompt()) + Number(prompt()), prompt())', '["a","b c"] 7 null');
 
+  const demo = await open('demo');
+  await demo.click('#demo');
+  await demo.waitForSelector('#pad:not([hidden])');
+  await demo.waitForFunction(() => [...document.querySelectorAll('.participant')].map((p) => p.textContent).join() === 'Demo (you)');
+  step('demo mode: a private pad');
+
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
 
   iv.once('dialog', (d) => d.accept());
