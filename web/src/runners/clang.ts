@@ -20,12 +20,12 @@ export const clangRunner = (lang: 'c' | 'cpp'): Runner => ({
   async run(model, ctx, { flags, args, stdin }) {
     let result;
     try {
-      result = await runWorker<{ wasm?: Uint8Array; ms: number; pch: boolean }>(getCompiler(), { lang, src: model.getValue(), flags }, ctx, true);
+      result = await runWorker<{ wasm?: Uint8Array; ms: number; pch?: 'built' | 'cached' }>(getCompiler(), { lang, src: model.getValue(), flags }, ctx, true);
     } catch (e) {
       compiler = undefined;
       throw e;
     }
-    const took = `\x1b[2m(${(result.ms / 1000).toFixed(1)} s${result.pch ? ', precompiled headers' : ''})\x1b[0m`;
+    const took = `\x1b[2m(${(result.ms / 1000).toFixed(1)} s${result.pch ? `, ${result.pch === 'built' ? 'built ' : ''}precompiled headers` : ''})\x1b[0m`;
     if (!result.wasm) {
       ctx.write(`\x1b[1;31m[compilation failed]\x1b[0m ${took}\n`);
       return result.code;

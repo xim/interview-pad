@@ -180,8 +180,8 @@ try {
   await toggleSetting(cand, 'completion');
   step('completion can be turned off');
 
-  await runCase(iv, cand, 'cpp', null, 'Hello from C++: [3, 1, 2]', 120000);
-  await runCase(iv, cand, 'cpp', null, 'precompiled headers');
+  await runCase(iv, cand, 'cpp', null, 'built precompiled headers', 120000);
+  await runCase(iv, cand, 'cpp', null, 's, precompiled headers');
   await runCase(iv, cand, 'cpp', 'int main() { return x; }', '[compilation failed]');
   await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v; return v.at(1); }', "terminate called after throwing an instance of 'std::out_of_range'\n  what():  vector\n");
   await runCase(cand, iv, 'cpp', '#include <cstdio>\n#include <stdexcept>\nint main() { try { throw std::runtime_error("boom"); } catch (const std::exception& e) { std::puts(e.what()); } }', 'boom');
