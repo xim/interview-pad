@@ -95,6 +95,10 @@ async function pollRequests() {
   if (!modalUsed && !dialog.open) dialog.showModal();
 }
 
+for (const b of document.querySelectorAll<HTMLButtonElement>('button.about')) {
+  b.onclick = () => $<HTMLDialogElement>('about-dialog').showModal();
+}
+
 $('requests-dialog').addEventListener('close', () => {
   modalUsed = true;
   shownRequests = ''; // re-render anything still pending as banners

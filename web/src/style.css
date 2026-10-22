@@ -341,3 +341,51 @@ main {
 .ansi-fg-13 { color: #ff92df; }
 .ansi-fg-14 { color: #6ae4ff; }
 .ansi-fg-15 { color: #ffffff; }
+
+button.about {
+  width: 1.7rem;
+  height: 1.7rem;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  border: 1.5px solid var(--muted);
+  color: var(--muted);
+  font-weight: bold;
+  line-height: 1;
+}
+
+#about-corner {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+}
+
+/* inside the interview the toolbar has its own */
+body:has(#pad:not([hidden])) #about-corner {
+  display: none;
+}
+
+#about-dialog {
+  max-width: 40rem;
+  line-height: 1.45;
+}
+
+#about-dialog dt {
+  margin-top: 0.8rem;
+  font-weight: bold;
+}
+
+#about-dialog dd {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+}
+
+#about-dialog a {
+  color: #6cb6ff;
+}
+
+#about-dialog form {
+  justify-content: space-between;
+  align-items: center;
+  margin: 1.2rem 0 0;
+}

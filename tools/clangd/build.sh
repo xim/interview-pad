@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds clangd for the browser (emscripten, threaded) into web/public/clangd/.
-# Adapted from https://github.com/guyutongxue/clangd-in-browser (MIT), incl. wait_stdin.patch.
+# Adapted from https://github.com/guyutongxue/clangd-in-browser (MIT, see LICENSE.clangd-in-browser), incl. wait_stdin.patch.
 # Headers aren't embedded: the page mounts the bundled clang's resource tarball at runtime instead.
 # Slow (~LLVM build); WORK holds the checkouts and build dirs for reuse.
 set -euo pipefail

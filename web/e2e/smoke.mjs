@@ -75,6 +75,11 @@ function step(name) {
 const pages = [];
 try {
   const iv = await open('interviewer');
+  await iv.click('#about-corner');
+  await iv.waitForSelector('#about-dialog[open]');
+  await iv.click('#about-dialog button');
+  if (!(await fetch(new URL('licenses.txt', url))).ok) throw new Error('licenses.txt not served');
+  step('about dialog and license texts');
   await iv.click('summary');
   await iv.type('#login-form input[name=name]', 'Grace');
   await iv.type('#login-form input[name=password]', password);
@@ -108,6 +113,9 @@ try {
 
   await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 2);
   step('participants: 2');
+  await iv.click('#about-pad');
+  await iv.waitForSelector('#about-dialog[open]');
+  await iv.click('#about-dialog button');
 
   await cand.select('#lang', 'python');
   await iv.waitForFunction(() => document.querySelector('#lang').value === 'python');

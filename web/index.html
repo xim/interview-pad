@@ -8,6 +8,34 @@
   <link rel="stylesheet" href="./src/style.css">
 </head>
 <body>
+  <button id="about-corner" class="about" title="About">?</button>
+  <dialog id="about-dialog">
+    <h2>interview-pad</h2>
+    <p>Made by Morten Minde Neergaard, with Claude.</p>
+    <p>Standing on the shoulders of giants:</p>
+    <dl>
+      <dt>Editor and collaboration</dt>
+      <dd><a href="https://microsoft.github.io/monaco-editor/">Monaco Editor</a> (MIT), with TypeScript and Codicons;
+        <a href="https://github.com/brijeshb42/monaco-vim">monaco-vim</a> (MIT), from CodeMirror's Vim mode;
+        <a href="https://yjs.dev/">Yjs</a>, y-websocket, y-monaco, y-protocols and lib0 (MIT)</dd>
+      <dt>Compilers and runtimes</dt>
+      <dd><a href="https://llvm.org/">LLVM</a>: Clang, LLD, libc++, libunwind, clangd (Apache-2.0 with LLVM exception);
+        <a href="https://yowasp.org/">YoWASP</a> Clang (Apache-2.0, ISC);
+        <a href="https://github.com/WebAssembly/wasi-libc">wasi-libc</a> and musl (MIT, Apache-2.0);
+        <a href="https://github.com/bjorn3/browser_wasi_shim">browser_wasi_shim</a> (MIT/Apache-2.0);
+        <a href="https://pyodide.org/">Pyodide</a> (MPL-2.0) with <a href="https://www.python.org/">CPython</a> (PSF);
+        <a href="https://emscripten.org/">Emscripten</a> (MIT);
+        <a href="https://github.com/davidhalter/jedi">Jedi</a> (MIT); NumPy, pandas, pydantic, pytest and other Python packages</dd>
+      <dt>Server</dt>
+      <dd><a href="https://www.starlette.io/">Starlette</a>, <a href="https://www.uvicorn.org/">Uvicorn</a> and
+        <a href="https://github.com/python-websockets/websockets">websockets</a> (BSD-3-Clause);
+        <a href="https://github.com/y-crdt/pycrdt">pycrdt</a> and pycrdt-websocket (MIT)</dd>
+      <dt>Ideas and recipes</dt>
+      <dd><a href="https://github.com/binji/wasm-clang">wasm-clang</a> by Ben Smith (output style);
+        <a href="https://github.com/guyutongxue/clangd-in-browser">clangd-in-browser</a> by Guyutongxue (MIT, clangd build)</dd>
+    </dl>
+    <form method="dialog"><a href="licenses.txt" target="_blank">All license texts</a><button>Close</button></form>
+  </dialog>
   <section id="landing" hidden>
     <h1>interview-pad</h1>
     <form id="join-form">
@@ -47,6 +75,7 @@
     <main>
       <div id="left">
         <header class="bar">
+          <button id="about-pad" class="about" title="About">?</button>
           <select id="lang"></select>
           <input id="flags" spellcheck="false" title="Compiler flags (shared)">
           <button id="run" title="Ctrl+Enter">Run</button>

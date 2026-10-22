@@ -4,7 +4,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "check": "tsc --noEmit",
-    "postinstall": "node scripts/pyodide.mjs && node scripts/clang-eh.mjs",
+    "postinstall": "node scripts/pyodide.mjs && node scripts/clang-eh.mjs && node scripts/notices.mjs",
     "e2e": "node e2e/smoke.mjs"
   },
   "type": "module",
