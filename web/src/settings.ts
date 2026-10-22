@@ -1,4 +1,6 @@
 import * as monaco from 'monaco-editor';
+
+declare const __BUILD_TIME__: string; // vite.config.ts
 import { initVimMode } from 'monaco-vim';
 import { configureClangd } from './clangd';
 import { $ } from './main';
@@ -22,6 +24,7 @@ export function setupSettings(editor: monaco.editor.IStandaloneCodeEditor) {
   const themeSelect = $<HTMLSelectElement>('theme');
   themeSelect.replaceChildren(...Object.entries(THEMES).map(([id, label]) => new Option(label, id)));
   $('settings').onclick = () => dialog.showModal();
+  $('build').textContent = `Build ${__BUILD_TIME__}`;
 
   let vim: { dispose(): void } | undefined;
   const apply = () => {

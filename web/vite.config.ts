@@ -5,6 +5,7 @@ const backend = process.env.BACKEND ?? 'http://127.0.0.1:8000';
 
 export default defineConfig({
   base: './',
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
   build: { chunkSizeWarningLimit: 4096 }, // Monaco
   worker: { format: 'es' },
   // loads its wasm via new URL(..., import.meta.url), which pre-bundling breaks

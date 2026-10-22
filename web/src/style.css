@@ -120,7 +120,8 @@ dialog small {
 }
 
 #settings-dialog form {
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin: 1rem 0 0;
 }
 
