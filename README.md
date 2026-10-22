@@ -65,6 +65,10 @@ cd web && npm run check                 # type-check
 cd web && npm run build && npm run e2e  # fresh server + two headless Chrome sessions (CHROME=... to override)
 ```
 
+## License
+
+MIT, see [LICENSE](LICENSE). Third-party notices are generated into `licenses.txt` (About dialog).
+
 ## Limitations
 
 - stdin and arguments are given up front (Input tab); no interactive stdin. TS gets `process.argv` and `prompt()`.

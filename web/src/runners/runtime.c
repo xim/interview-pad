@@ -69,6 +69,7 @@ struct type_mismatch_data {
 
 EXTERN_C NO_UBSAN __attribute__((noreturn)) void __ubsan_handle_type_mismatch_v1_abort(void* data, V ptr) {
     const struct type_mismatch_data* d = (const struct type_mismatch_data*)data;
+    // as compiler-rt's ubsan_handlers.cpp (TypeCheckKinds), whose report wording this mirrors
     static const char* const kinds[] = {"load of", "store to", "reference binding to", "member access within",
                                         "member call on", "constructor call on", "downcast of", "downcast of",
                                         "upcast of", "cast to virtual base of", "_Nonnull binding to",

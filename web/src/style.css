@@ -320,7 +320,7 @@ main {
   flex-basis: 100%;
 }
 
-/* ANSI output (ansi.ts), tuned for the dark output pane: "black" must stay readable, e.g. clang's note: */
+/* ANSI output (ansi.ts): based on VS Code's terminal palette, with black lightened for the dark pane (e.g. clang's note:) */
 .ansi-bold { font-weight: bold; }
 .ansi-faint { opacity: 0.7; }
 .ansi-italic { font-style: italic; }
