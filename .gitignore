@@ -7,3 +7,4 @@ web/public/pyodide/
 web/public/clang/
 web/public/clangd/
 web/public/licenses.txt
+tools/clang/dist/
