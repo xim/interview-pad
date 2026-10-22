@@ -28,9 +28,11 @@ const browser = await puppeteer.launch({
   defaultViewport: { width: 1280, height: 720 },
 });
 
-async function open(label) {
+async function open(label, userAgent) {
   const page = await (await browser.createBrowserContext()).newPage();
+  if (userAgent) await page.setUserAgent(userAgent);
   page.on('pageerror', (e) => console.log(`[${label}] pageerror:`, e.message));
+  page.on('console', (m) => m.text().includes('out of sync') && (desyncs += `[${label}] ${m.text()}\n`));
   page.on('console', (m) => !m.text().includes('401') && !m.text().includes('[vite]') && console.log(`[${label}] console.${m.type()}:`, m.text()));
   await page.evaluateOnNewDocument(() => {
     window.editorText = () => document.querySelector('.view-lines')?.textContent.replace(/\u00a0/g, ' ') ?? '';
@@ -70,6 +72,7 @@ function step(name) {
 }
 
 const pages = [];
+let desyncs = '';
 try {
   const iv = await open('interviewer');
   await iv.click('summary');
@@ -79,7 +82,8 @@ try {
   await iv.waitForSelector('#pad:not([hidden])');
   step('interviewer logged in');
 
-  const cand = await open('candidate');
+  // Firefox on Android's UA: Monaco treated it as Windows (\r\n line endings), which desynced the editors
+  const cand = await open('candidate', 'Mozilla/5.0 (Android 14; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0');
   await cand.type('#join-form input', 'Ada');
   await cand.click('#join-form button');
   await cand.waitForSelector('#waiting:not([hidden])');
@@ -115,6 +119,18 @@ try {
   await cand.keyboard.type(` # ${marker}`);
   await iv.waitForFunction((m) => editorText().includes(m), {}, marker);
   step('edit synced');
+
+  // a multi-line paste plus concurrent typing must leave both editors identical
+  const lines = (page) => page.evaluate(() => document.querySelector('.view-lines').innerText.replace(/\u00a0/g, ' '));
+  await cand.keyboard.down('Control'); await cand.keyboard.press('End'); await cand.keyboard.up('Control');
+  await cand.keyboard.sendCharacter('\ndef add(a, b):\n    return a + b\n');
+  await iv.click('.view-lines');
+  await iv.keyboard.down('Control'); await iv.keyboard.press('Home'); await iv.keyboard.up('Control');
+  await iv.keyboard.type('# top\n');
+  await cand.keyboard.type('# tail');
+  await new Promise((r) => setTimeout(r, 1500));
+  if ((await lines(iv)) !== (await lines(cand))) throw new Error(`editors diverged:\n${await lines(iv)}\n---\n${await lines(cand)}`);
+  step('paste and concurrent typing converge');
 
   const toggleSetting = async (page, id) => {
     await page.click('#settings');
@@ -269,6 +285,8 @@ try {
   await cand.waitForFunction(() => document.querySelector('#waiting-text').textContent === 'The interview has ended.');
   await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 1);
   step('end interview kicks the candidate');
+  if (desyncs) throw new Error(`editor/shared text divergence detected:\n${desyncs}`);
+  step('no editor divergence detected');
 
   if (server) {
     const stopped = new Promise((resolve) => server.once('exit', resolve));
