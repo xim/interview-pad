@@ -8,5 +8,3 @@
 - LLVM (tools/clang, clang-eh.mjs, tools/clangd/build.sh) and Pyodide versions must be upgraded together.
 - LLVM 23: tools/clang/wasi.patch needs porting (6 hunks conflict: CrashRecoveryContext.cpp, InitLLVM.cpp, Path.inc
   locking, Process.inc PreventCoreFiles, clang Compiler.h); then drop the __cpp_exception tag from clang-eh.mjs.
-- Fix dead links in the About dialog.
-- Backend dependencies: do we need websockets, pycrdt(-websocket), Starlette *and* uvicorn for a program this small?
