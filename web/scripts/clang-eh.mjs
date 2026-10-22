@@ -24,8 +24,8 @@ const SOURCES = [
   'libcxxabi/include/__cxxabi_config.h',
   ['libcxxabi/src/include/atomic_support.h', 'libcxx/src/include/atomic_support.h'],
 ];
-// newer libunwind defines this tag (this is its definition, from Unwind-wasm.c on LLVM main); 22.1.8 still expects
-// wasm-ld to, which this clang snapshot no longer does
+// LLVM 22's wasm-ld stopped defining this tag and its libunwind doesn't yet (LLVM 23's does: this is that definition,
+// from Unwind-wasm.c)
 const TAG_SOURCE = '__asm__(".globl __cpp_exception\\n.tagtype __cpp_exception i32\\n__cpp_exception:\\n");';
 
 const dest = new URL('../public/clang/', import.meta.url);

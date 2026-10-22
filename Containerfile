@@ -1,6 +1,7 @@
 FROM docker.io/library/node:24-slim AS web
 WORKDIR /src/web
-COPY web/package.json web/package-lock.json ./
+COPY tools/clang/dist/ /src/tools/clang/dist/
+COPY web/package.json web/package-lock.json web/.npmrc ./
 COPY web/scripts/ scripts/
 RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/cache DOWNLOAD_CACHE=/cache npm ci
 COPY web/ ./

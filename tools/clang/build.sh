@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the @yowasp/clang npm package (Clang/LLD for the browser) for an upstream LLVM release into tools/clang/dist/,
+# Builds the @yowasp/clang npm package (Clang/LLD for the browser) for an upstream LLVM release into tools/clang/dist/package/,
 # using YoWASP's own recipe (https://github.com/YoWASP/clang, ISC/Apache-2.0) at a pinned revision, with their WASI
 # patch (see wasi.patch) applied to the release. ~10-20 min on 32 cores; WORK holds ~6 GB for reuse.
 set -euo pipefail
@@ -28,5 +28,7 @@ rm -rf wasi-libc-build # build.sh doesn't reinstall wasi-libc's headers on re-ru
 ./build.sh
 rm -rf npmjs/dist
 PYTHON=python3 ./package-npmjs.sh
-cp npmjs/dist/*.tgz "$HERE/dist/"
-ls -la "$HERE/dist"
+# unpacked: web/package.json depends on the directory, as the tarball isn't bit-for-bit reproducible (lockfile integrity)
+rm -rf "$HERE/dist" && mkdir -p "$HERE/dist"
+tar xzf npmjs/dist/*.tgz -C "$HERE/dist"
+ls -la "$HERE/dist/package"

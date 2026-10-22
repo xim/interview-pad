@@ -17,6 +17,7 @@ and the output is shared. Python backend, one instance per interview, in-memory 
 ## Build and run (podman, rootless)
 
 ```sh
+tools/clang/build.sh              # required: the C/C++ compiler, see below
 tools/clangd/build.sh             # optional, for C/C++ IntelliSense; see below
 podman build -t interview-pad .
 podman run --rm --read-only --cap-drop=all --security-opt=no-new-privileges \
@@ -27,6 +28,14 @@ podman run --rm --read-only --cap-drop=all --security-opt=no-new-privileges \
 - Without `INTERVIEWER_PASSWORD`, a random password is generated and logged.
 - Serve over HTTPS (session cookies are `Secure`; browsers make an exception for `localhost`).
 - One instance per interview: run more on different ports, each with its own password.
+
+### C/C++ compiler (clang)
+
+`tools/clang/build.sh` builds the in-browser Clang/LLD (LLVM 22.1.8) into `tools/clang/dist/package/`, which
+`web/package.json` depends on, so run it before `npm install` or `podman build`. It uses
+[YoWASP](https://github.com/YoWASP/clang)'s recipe with their WASI patch plus a fix (`tools/clang/wasi.patch`); the
+published `@yowasp/clang` package is an older LLVM 22 snapshot. Needs git, cmake, make, ccache, python3 and a C++
+compiler; ~20 min on 32 cores, ~6 GB in `~/.cache/interview-pad-yowasp` (reruns are incremental).
 
 ### C/C++ IntelliSense (clangd)
 
@@ -57,6 +66,7 @@ anyway: HTTP/2 (`Protocols h2 http/1.1`, mod_http2) for parallel downloads, and 
 
 ```sh
 cd server && uv sync && INTERVIEWER_PASSWORD=pw uv run uvicorn app:create_app --factory --reload
+tools/clang/build.sh                    # once, see above
 cd web && npm install && npm run dev    # http://localhost:5173, proxies api/ and ws/ to :8000
 
 cd server && uv run pytest
