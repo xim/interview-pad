@@ -40,19 +40,18 @@ completion (~1.6 s once cached).
 ## Behind Apache
 
 ```apache
-# mod_proxy, mod_proxy_http (2.4.47+ for upgrade=websocket), mod_deflate
+# mod_proxy, mod_proxy_http (2.4.47+ for upgrade=websocket)
 ProxyPass        /pad/ http://127.0.0.1:8080/ upgrade=websocket
 ProxyPassReverse /pad/ http://127.0.0.1:8080/
 # the app sets its cookie on /; scope it to the prefix so instances on one host don't clash
 ProxyPassReverseCookiePath / /pad/
-
-# compilers and runtimes are large; compression roughly quarters them
-<Location /pad/>
-    AddOutputFilterByType DEFLATE application/wasm application/x-tar text/javascript
-</Location>
 ```
 
-All app URLs are relative, so any prefix works; the trailing slash on `/pad/` matters.
+All app URLs are relative, so any prefix works; the trailing slash on `/pad/` matters. No compression or caching
+config is needed: the image serves brotli/gzip-precompressed files (~190 MB of compilers and runtimes become ~33 MB)
+and sets `Cache-Control` itself (hashed `assets/` immutable, the rest revalidated). Leave `mod_deflate` on if you
+like; it doesn't re-compress responses that already have a `Content-Encoding`. Worth having on the virtual host
+anyway: HTTP/2 (`Protocols h2 http/1.1`, mod_http2) for parallel downloads, and HSTS.
 
 ## Development
 

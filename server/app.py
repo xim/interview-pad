@@ -1,13 +1,17 @@
 import logging
+import mimetypes
 import os
 import secrets
+import stat
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import anyio
 from pycrdt import Map, Text
 from pycrdt.websocket import ASGIServer, WebsocketServer
 from starlette.applications import Starlette
+from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException
 from starlette.middleware import Middleware
 from starlette.requests import HTTPConnection, Request
@@ -74,6 +78,31 @@ class CrossOriginIsolation:
         await self.app(scope, receive, send_isolated)
 
 
+class Static(StaticFiles):
+    """Serves the build's precompressed siblings (.br/.gz, from web/scripts/precompress.mjs) when accepted, and sets
+    caching: content-hashed assets/ forever, everything else revalidated, so a rebuild never mixes old and new."""
+
+    ENCODINGS = (("br", ".br"), ("gzip", ".gz"))
+
+    async def get_response(self, path: str, scope) -> Response:
+        accepted = Headers(scope=scope).get("accept-encoding", "")
+        response = None
+        for encoding, suffix in self.ENCODINGS:
+            if encoding not in accepted:
+                continue
+            full_path, stat_result = await anyio.to_thread.run_sync(self.lookup_path, path + suffix)
+            if stat_result and stat.S_ISREG(stat_result.st_mode):
+                response = self.file_response(full_path, stat_result, scope)
+                media_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+                response.headers["content-type"] = media_type + ("; charset=utf-8" if media_type.startswith("text/") else "")
+                response.headers["content-encoding"] = encoding
+                break
+        response = response or await super().get_response(path, scope)
+        response.headers["vary"] = "Accept-Encoding"
+        response.headers["cache-control"] = "public, max-age=31536000, immutable" if path.startswith("assets/") else "no-cache"
+        return response
+
+
 @dataclass
 class Session:
     name: str
@@ -82,7 +111,7 @@ class Session:
     id: str = field(default_factory=lambda: secrets.token_urlsafe(8))
 
 
-def create_app(password: str | None = None, secure_cookies: bool = True) -> Starlette:
+def create_app(password: str | None = None, secure_cookies: bool = True, static_dir=STATIC_DIR) -> Starlette:
     if password is None:
         password = os.environ.get("INTERVIEWER_PASSWORD")
     if not password:
@@ -203,7 +232,7 @@ def create_app(password: str | None = None, secure_cookies: bool = True) -> Star
             Route("/api/admit/{id}", admit, methods=["POST"]),
             Route("/api/end", end, methods=["POST"]),
             WebSocketRoute(ROOM, ws),
-            Mount("/", StaticFiles(directory=STATIC_DIR, html=True, check_dir=False)),
+            Mount("/", Static(directory=static_dir, html=True, check_dir=False)),
         ],
         lifespan=lifespan,
         middleware=[Middleware(CrossOriginIsolation)],
