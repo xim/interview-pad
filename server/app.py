@@ -253,6 +253,16 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
             raise HTTPException(429, "Too many people are waiting to join. Try again later.")
         return start_session(Session(name, "candidate", "pending"))
 
+    async def logout(request: Request) -> Response:
+        token = request.cookies.get(COOKIE, "")
+        if s := sessions.pop(token, None):
+            demo_rooms.pop(s.id, None)
+            for websocket in list(sockets.get(token, ())):
+                await websocket.close(1000)
+        response = JSONResponse({})
+        response.delete_cookie(COOKIE, httponly=True, samesite="strict", secure=secure_cookies)
+        return response
+
     async def demo(request: Request) -> Response:
         s = Session("Demo", "demo", "admitted")
         demo_rooms[s.id] = new_room()
@@ -302,6 +312,7 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
             Route("/api/admit/{id}", admit, methods=["POST"]),
             Route("/api/end", end, methods=["POST"]),
             Route("/api/demo", demo, methods=["POST"]),
+            Route("/api/logout", logout, methods=["POST"]),
             WebSocketRoute(ROOM, ws),
             Mount("/", Static(directory=static_dir, html=True, check_dir=False)),
         ],

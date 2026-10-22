@@ -174,8 +174,15 @@ export function startPad(me: Me) {
   });
 
   const endButton = $<HTMLButtonElement>('end');
-  endButton.hidden = me.role !== 'interviewer';
-  endButton.onclick = async () => {
+  endButton.hidden = me.role === 'candidate';
+  if (me.role === 'demo') {
+    endButton.textContent = 'Leave demo';
+    endButton.onclick = async () => {
+      provider.destroy(); // so the closing socket isn't taken for a lost session
+      await api('logout', {});
+      location.reload();
+    };
+  } else endButton.onclick = async () => {
     if (!confirm('End the interview? This disconnects all candidates.')) return;
     await api('end', {}); // the server drops kicked clients' cursors itself
   };

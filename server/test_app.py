@@ -205,6 +205,14 @@ def test_demo_gets_a_private_room(app, interviewer):
             assert sync_doc(ws).get("state", type=Map)["lang"] == "cpp"  # the interview room is untouched
 
 
+def test_logout(app):
+    c = TestClient(app)
+    c.post("/api/demo")
+    assert c.get("/api/me").status_code == 200
+    assert c.post("/api/logout").status_code == 200
+    assert c.get("/api/me").status_code == 401
+
+
 def test_demo_rooms_are_capped(app):
     from app import MAX_DEMOS
 

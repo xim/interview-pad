@@ -294,6 +294,10 @@ try {
   await demo.waitForSelector('#pad:not([hidden])');
   await demo.waitForFunction(() => [...document.querySelectorAll('.participant')].map((p) => p.textContent).join() === 'Demo (you)');
   step('demo mode: a private pad');
+  await demo.click('#end');
+  await demo.waitForSelector('#landing:not([hidden])');
+  if (await demo.$eval('#landing-error', (e) => e.textContent)) throw new Error('leaving the demo showed a session-lost notice');
+  step('leave demo');
 
   if (process.env.SCREENSHOT) await iv.screenshot({ path: process.env.SCREENSHOT });
 
