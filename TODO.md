@@ -6,3 +6,5 @@
 - Make the rest of the page follow the Monaco theme (and system theme?).
 - Use xterm.js for interactive stdin?
 - LLVM (clang-eh.mjs, tools/clangd/build.sh), Pyodide and @yowasp/clang versions must be upgraded together.
+- Fix dead links in the About dialog.
+- Backend dependencies: do we need websockets, pycrdt(-websocket), Starlette *and* uvicorn for a program this small?
