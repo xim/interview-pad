@@ -31,12 +31,15 @@ int main(void) {
     printf("Hello from %s\\n", "C");
 }
 """,
-    "cpp": """#include <print>
-#include <vector>
+    "cpp": """#include <iostream>
+#include <string>
+
+std::string greet(const std::string& name) {
+    return "Hello from " + name;
+}
 
 int main() {
-    std::vector<int> v{3, 1, 2};
-    std::println("Hello from C++: {}", v);
+    std::cout << greet("C++") << '\\n';
 }
 """,
     "python": """def greet(name: str) -> str:
