@@ -343,6 +343,7 @@ main {
 .ansi-fg-15 { color: #ffffff; }
 
 button.about {
+  flex: none;
   width: 1.7rem;
   height: 1.7rem;
   padding: 0;
@@ -357,7 +358,7 @@ button.about {
 #about-corner {
   position: fixed;
   top: 0.75rem;
-  left: 0.75rem;
+  right: 0.75rem;
 }
 
 /* inside the interview the toolbar has its own */
