@@ -56,6 +56,8 @@ export function startPad(me: Me) {
   for (const [lang, l] of Object.entries(LANGS) as [Lang, (typeof LANGS)[Lang]][]) {
     models[lang] = monaco.editor.createModel('', l.monaco, monaco.Uri.file(l.file));
     new MonacoBinding(doc.getText(`code:${lang}`), models[lang], new Set([editor]), awareness);
+    // Monaco picks \r\n for user agents it doesn't recognize as Linux/macOS (e.g. Firefox on Android)
+    models[lang].setEOL(monaco.editor.EndOfLineSequence.LF);
   }
 
   const state = doc.getMap('state');
