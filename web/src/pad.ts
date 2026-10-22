@@ -40,8 +40,7 @@ export function startPad(me: Me) {
   const doc = new Y.Doc();
   const url = new URL('ws', location.href);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  // periodic resync re-runs the sync handshake, recovering any update lost without a reconnect
-  const provider = new WebsocketProvider(url.href, 'pad', doc, { resyncInterval: 10_000 });
+  const provider = new WebsocketProvider(url.href, 'pad', doc);
   const { awareness } = provider;
   awareness.setLocalStateField('user', { name: me.name, role: me.role } satisfies User);
 
@@ -54,26 +53,12 @@ export function startPad(me: Me) {
   });
   registerPythonIntelligence(() => settings.completion);
   const models = {} as Record<Lang, monaco.editor.ITextModel>;
-  const bindings = {} as Record<Lang, MonacoBinding>;
-  const bind = (lang: Lang) => {
-    bindings[lang] = new MonacoBinding(doc.getText(`code:${lang}`), models[lang], new Set([editor]), awareness);
-    // Monaco picks \r\n for user agents it doesn't recognize as Linux/macOS (e.g. Firefox on Android)
-    models[lang].setEOL(monaco.editor.EndOfLineSequence.LF);
-  };
   for (const [lang, l] of Object.entries(LANGS) as [Lang, (typeof LANGS)[Lang]][]) {
     models[lang] = monaco.editor.createModel('', l.monaco, monaco.Uri.file(l.file));
-    bind(lang);
+    new MonacoBinding(doc.getText(`code:${lang}`), models[lang], new Set([editor]), awareness);
+    // Monaco picks \r\n for user agents it doesn't recognize as Linux/macOS (e.g. Firefox on Android)
+    models[lang].setEOL(monaco.editor.EndOfLineSequence.LF);
   }
-  // Safety net: both sides are updated synchronously, so between events the editor must equal the shared text.
-  // If a binding bug ever lets them drift (as \r\n once did), rebind, which reloads the editor from the shared text.
-  setInterval(() => {
-    for (const lang of Object.keys(LANGS) as Lang[]) {
-      if (models[lang].getValue() === doc.getText(`code:${lang}`).toString()) continue;
-      console.warn(`editor out of sync with the shared ${lang} code; reloading it`);
-      bindings[lang].destroy();
-      bind(lang);
-    }
-  }, 2000);
 
   const state = doc.getMap('state');
   const currentLang = () => {

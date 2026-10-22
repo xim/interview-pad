@@ -32,7 +32,6 @@ async function open(label, userAgent) {
   const page = await (await browser.createBrowserContext()).newPage();
   if (userAgent) await page.setUserAgent(userAgent);
   page.on('pageerror', (e) => console.log(`[${label}] pageerror:`, e.message));
-  page.on('console', (m) => m.text().includes('out of sync') && (desyncs += `[${label}] ${m.text()}\n`));
   page.on('console', (m) => !m.text().includes('401') && !m.text().includes('[vite]') && console.log(`[${label}] console.${m.type()}:`, m.text()));
   await page.evaluateOnNewDocument(() => {
     window.editorText = () => document.querySelector('.view-lines')?.textContent.replace(/\u00a0/g, ' ') ?? '';
@@ -72,7 +71,6 @@ function step(name) {
 }
 
 const pages = [];
-let desyncs = '';
 try {
   const iv = await open('interviewer');
   await iv.click('summary');
@@ -285,8 +283,6 @@ try {
   await cand.waitForFunction(() => document.querySelector('#waiting-text').textContent === 'The interview has ended.');
   await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 1);
   step('end interview kicks the candidate');
-  if (desyncs) throw new Error(`editor/shared text divergence detected:\n${desyncs}`);
-  step('no editor divergence detected');
 
   if (server) {
     const stopped = new Promise((resolve) => server.once('exit', resolve));
