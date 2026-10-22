@@ -26,7 +26,8 @@ let libeh: Promise<Uint8Array> | undefined;
 const PREAMBLE = /^(?:[ \t]*(?:#[ \t]*include[ \t]*[<"][^>"\n]+[>"][ \t]*)?(?:\/\/[^\n]*)?\n)*/;
 const MAX_PCHS = 3; // ~10-15 MB each
 const pchs = new Map<string, Uint8Array>();
-const pchFailed = new Set<string>(); // don't retry (e.g. a device where it runs out of memory) until the key changes
+// key -> reason; not retried (e.g. a device where it runs out of memory) until includes or flags change
+const pchFailed = new Map<string, string>();
 async function buildPch(key: string, preamble: string, args: string[]) {
   let stderr = '';
   try {
@@ -39,9 +40,7 @@ async function buildPch(key: string, preamble: string, args: string[]) {
     if (pchs.size > MAX_PCHS) pchs.delete(pchs.keys().next().value!);
     return pchs.get(key);
   } catch (e) {
-    pchFailed.add(key);
-    // a broken #include is reported by the normal compile; anything else (e.g. out of memory) is worth showing
-    if (!/error:/.test(stderr)) post(`\x1b[2m(precompiled headers unavailable: ${String(e).split('\n')[0]})\x1b[0m\n`);
+    pchFailed.set(key, stderr.split('\n').find((l) => /error/i.test(l)) ?? String(e).split('\n')[0]);
   }
 }
 
@@ -85,6 +84,8 @@ onmessage = async ({ data }) => {
       fetchProgress,
     });
     const wasm = out!['a.out'] as Uint8Array;
+    // a failure the real compile didn't hit isn't the user's #include; show it (e.g. out of memory)
+    if (wanted && !pch) post(`\x1b[2m(precompiled headers unavailable: ${pchFailed.get(key)})\x1b[0m\n`);
     postMessage({ type: 'exit', code: 0, wasm, ms: performance.now() - compileStart, pch: pchNote });
   } catch (e) {
     if (!(e instanceof Exit)) post(`${e}\n`);
