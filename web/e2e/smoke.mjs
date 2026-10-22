@@ -32,6 +32,8 @@ async function open(label, userAgent) {
   const page = await (await browser.createBrowserContext()).newPage();
   if (userAgent) await page.setUserAgent(userAgent);
   page.on('pageerror', (e) => console.log(`[${label}] pageerror:`, e.message));
+  page.compilerFetches = 0;
+  page.on('request', (r) => /llvm\.core-[^/]*\.wasm$/.test(r.url()) && page.compilerFetches++);
   page.on('console', (m) => !m.text().includes('401') && !m.text().includes('[vite]') && console.log(`[${label}] console.${m.type()}:`, m.text()));
   await page.evaluateOnNewDocument(() => {
     window.editorText = () => document.querySelector('.view-lines')?.textContent.replace(/\u00a0/g, ' ') ?? '';
@@ -101,6 +103,7 @@ try {
   if (await iv.$('#requests-dialog[open]')) throw new Error('second request should be a banner, not a modal');
   await iv.click('#request-banners .request button.secondary');
   await late.waitForFunction(() => document.querySelector('#waiting-text').textContent.includes('did not let you in'));
+  await iv.waitForFunction(() => document.title === 'interview-pad');
   step('later join requests are banners');
 
   await iv.waitForFunction(() => document.querySelectorAll('.participant').length === 2);
@@ -203,6 +206,8 @@ try {
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
   step('cpp exit code shared');
+  for (const [label, page] of pages) if (page.compilerFetches > 1) throw new Error(`${label} downloaded the compiler ${page.compilerFetches} times`);
+  step('compiler downloaded once per browser');
 
   if ((await fetch(new URL('clangd/clangd.wasm', url), { method: 'HEAD' })).ok) {
     await setCode(cand, '#include <limits>\nint main() { std::numeric_li');

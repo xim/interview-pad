@@ -9,14 +9,22 @@ const decoder = new TextDecoder();
 const write = (bytes: Uint8Array | null) => bytes && post(decoder.decode(bytes, { stream: true }));
 
 let lastPct = -1;
-let compileStart = 0;
 const fetchProgress = ({ doneLength, totalLength }: { doneLength: number; totalLength: number }) => {
   const pct = Math.floor((doneLength / totalLength) * 20) * 5;
   if (pct === lastPct) return;
   lastPct = pct;
   postMessage({ type: 'status', text: pct < 100 ? `Downloading compiler ${pct}%` : 'Compiling' });
-  if (pct === 100) compileStart = performance.now(); // a first-run download doesn't count as compile time
 };
+
+// yowasp downloads its ~100 MB on the first run and doesn't share that between concurrent runs (a preload plus a
+// compile meant two downloads), so every run waits for this one first
+let ready: Promise<void> | undefined;
+const warmUp = () =>
+  (ready ??= (async () => {
+    try {
+      await commands.clang(['--version'], {}, { stdout: null, fetchProgress });
+    } catch {}
+  })());
 
 let libeh: Promise<Uint8Array> | undefined;
 
@@ -34,7 +42,7 @@ async function buildPch(key: string, preamble: string, args: string[]) {
     const out = await commands['clang++'](
       [...args, '-Xclang', '-fno-pch-timestamp', '-x', 'c++-header', 'pre.hpp', '-o', 'pre.pch'],
       { 'pre.hpp': preamble },
-      { stdout: null, stderr: (b) => b && (stderr += decoder.decode(b)), fetchProgress },
+      { stdout: null, stderr: (b) => b && (stderr += decoder.decode(b)) },
     );
     pchs.set(key, out!['pre.pch'] as Uint8Array);
     if (pchs.size > MAX_PCHS) pchs.delete(pchs.keys().next().value!);
@@ -52,13 +60,9 @@ onmessage = async ({ data }) => {
     });
     return;
   }
-  if (data.preload) {
-    try {
-      await commands.clang(['--version'], {}, { stdout: null, fetchProgress });
-    } catch {}
-    return;
-  }
+  if (data.preload) return void warmUp();
   postMessage({ type: 'status', text: 'Compiling' });
+  await warmUp();
   const { lang, src, flags } = data as { lang: 'c' | 'cpp'; src: string; flags: string[] };
   const name = lang === 'c' ? 'clang' : 'clang++';
   const source = `main.${lang}`;
@@ -70,7 +74,7 @@ onmessage = async ({ data }) => {
   post(echo([name, ...flags, source]));
   // colors aren't on by default since this isn't a terminal; the output pane renders ANSI
   const args = ['-fcolor-diagnostics', '-fansi-escape-codes', ...HIDDEN_FLAGS[lang], ...flags];
-  compileStart = performance.now();
+  const compileStart = performance.now();
   const cached = pchs.get(key);
   const wanted = /#[ \t]*include/.test(preamble) && !pchFailed.has(key);
   const pch = cached ?? (wanted ? await buildPch(key, preamble, language) : undefined);
@@ -81,7 +85,6 @@ onmessage = async ({ data }) => {
     const out = await commands[name]([...args, ...pchArgs, ...Object.keys(inputs), '-o', 'a.out'], { ...inputs, ...pchFiles }, {
       stdout: write,
       stderr: write,
-      fetchProgress,
     });
     const wasm = out!['a.out'] as Uint8Array;
     // a failure the real compile didn't hit isn't the user's #include; show it (e.g. out of memory)

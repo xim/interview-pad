@@ -63,10 +63,10 @@ let modalUsed = false;
 async function pollRequests() {
   setTimeout(pollRequests, POLL_MS);
   const pending = await api<Pending[]>('pending').catch(() => [] as Pending[]);
+  document.title = pending.length ? `(${pending.length}) Join request — interview-pad` : 'interview-pad';
   const ids = pending.map((p) => p.id).join();
   if (ids === shownRequests) return;
   shownRequests = ids;
-  document.title = pending.length ? `(${pending.length}) Join request — interview-pad` : 'interview-pad';
   const dialog = $<HTMLDialogElement>('requests-dialog');
   const box = modalUsed ? $('request-banners') : $('requests');
   if (!pending.length) {
