@@ -3,7 +3,18 @@ import gzip
 import pytest
 from starlette.testclient import TestClient
 
-from pycrdt import Doc, Map, Text, YMessageType, YSyncMessageType, create_sync_message, handle_sync_message
+from pycrdt import (
+    Awareness,
+    Doc,
+    Map,
+    Text,
+    YMessageType,
+    YSyncMessageType,
+    create_awareness_message,
+    create_sync_message,
+    handle_sync_message,
+    read_message,
+)
 from starlette.websockets import WebSocketDisconnect
 
 from app import ROOM, TEMPLATES, create_app
@@ -175,3 +186,27 @@ def test_ws_sync_seeded_doc(app):
             doc = sync_doc(ws)
         assert str(doc.get("code:python", type=Text)) == TEMPLATES["python"]
         assert doc.get("state", type=Map)["lang"] == "cpp"
+
+
+def receive_awareness(ws, into: Awareness) -> None:
+    while True:
+        msg = ws.receive_bytes()
+        if msg[0] == YMessageType.AWARENESS:
+            into.apply_awareness_update(read_message(msg[1:]), "test")
+            return
+
+
+def test_awareness_relayed_and_dropped_on_disconnect(app):
+    with TestClient(app) as a, TestClient(app) as b:
+        a.post("/api/login", json={"password": "pw"})
+        b.post("/api/login", json={"password": "pw"})
+        with b.websocket_connect(ROOM) as wb:
+            seen = Awareness(Doc())
+            with a.websocket_connect(ROOM) as wa:
+                mine = Awareness(Doc())
+                mine.set_local_state({"user": {"name": "A"}})
+                wa.send_bytes(create_awareness_message(mine.encode_awareness_update([mine.client_id])))
+                receive_awareness(wb, seen)
+                assert seen.states[mine.client_id] == {"user": {"name": "A"}}
+            receive_awareness(wb, seen)  # A's socket closed: the server announces A left
+            assert mine.client_id not in seen.states

@@ -1,15 +1,25 @@
+import asyncio
 import logging
 import mimetypes
 import os
 import secrets
 import stat
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import anyio
-from pycrdt import Map, Text
-from pycrdt.websocket import ASGIServer, WebsocketServer
+from pycrdt import (
+    Awareness,
+    Doc,
+    Map,
+    Text,
+    YMessageType,
+    create_awareness_message,
+    create_sync_message,
+    create_update_message,
+    handle_sync_message,
+    read_message,
+)
 from starlette.applications import Starlette
 from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException
@@ -26,7 +36,7 @@ COOKIE = "session"
 MAX_NAME = 40
 MAX_PENDING = 10  # anyone with the URL can ask to join
 STATIC_DIR = os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "web" / "dist")
-ROOM = "/ws/pad"  # y-websocket connects to <url>/<room>; pycrdt-websocket names rooms by path
+ROOM = "/ws/pad"  # y-websocket connects to <url>/<room name>
 
 TEMPLATES = {
     "c": """#include <stdio.h>
@@ -103,6 +113,57 @@ class Static(StaticFiles):
         return response
 
 
+class Room:
+    """The shared Y.Doc, served with the y-websocket protocol: sync steps and updates for the document, awareness
+    (cursors, names) relayed between clients and dropped when a client's socket closes."""
+
+    def __init__(self, doc: Doc):
+        self.doc = doc
+        self.awareness = Awareness(doc)
+        self.awareness.set_local_state(None)  # the server isn't a participant
+        self.clients: dict[WebSocket, tuple[asyncio.Queue, set[int]]] = {}  # socket -> (send queue, awareness ids)
+        doc.observe(lambda event: self.broadcast(create_update_message(event.update)))
+        self.awareness.observe(self._track)
+
+    def _track(self, topic: str, event) -> None:
+        changes, origin = event
+        if topic == "update" and origin in self.clients:
+            self.clients[origin][1].update(changes["added"], changes["updated"])
+
+    def broadcast(self, message: bytes, exclude: WebSocket | None = None) -> None:
+        for ws, (queue, _) in self.clients.items():
+            if ws is not exclude:
+                queue.put_nowait(message)
+
+    async def serve(self, ws: WebSocket) -> None:
+        queue: asyncio.Queue = asyncio.Queue()  # per client, so a slow one doesn't hold up the rest
+        self.clients[ws] = (queue, set())
+
+        async def send():
+            while True:
+                await ws.send_bytes(await queue.get())
+
+        sender = asyncio.create_task(send())
+        try:
+            queue.put_nowait(create_sync_message(self.doc))
+            if self.awareness.states:
+                queue.put_nowait(create_awareness_message(self.awareness.encode_awareness_update(list(self.awareness.states))))
+            async for message in ws.iter_bytes():
+                if message[0] == YMessageType.SYNC:
+                    if reply := handle_sync_message(message[1:], self.doc):  # updates are broadcast via doc.observe
+                        queue.put_nowait(reply)
+                elif message[0] == YMessageType.AWARENESS:
+                    self.awareness.apply_awareness_update(read_message(message[1:]), ws)
+                    self.broadcast(message, exclude=ws)
+        finally:
+            sender.cancel()
+            ids = list(self.clients.pop(ws)[1])
+            # a client can't announce leaving when it's kicked or its connection drops
+            self.awareness.remove_awareness_states(ids, None)
+            if ids:
+                self.broadcast(create_awareness_message(self.awareness.encode_awareness_update(ids)))
+
+
 @dataclass
 class Session:
     name: str
@@ -120,12 +181,15 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
 
     sessions: dict[str, Session] = {}
     sockets: dict[str, set[WebSocket]] = {}  # session token -> open sync websockets
-    yserver = WebsocketServer(auto_clean_rooms=False, log=log)
+    doc = Doc()
+    for lang, code in TEMPLATES.items():
+        doc[f"code:{lang}"] = Text(code)
+    doc["state"] = Map({"lang": "cpp"})
+    doc["output"] = Text()
+    room = Room(doc)
 
     def current(conn: HTTPConnection) -> Session | None:
         return sessions.get(conn.cookies.get(COOKIE, ""))
-
-    yasgi = ASGIServer(yserver)
 
     async def ws(websocket: WebSocket):
         s = current(websocket)
@@ -134,20 +198,11 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
             return
         token = websocket.cookies[COOKIE]
         sockets.setdefault(token, set()).add(websocket)
+        await websocket.accept()
         try:
-            await yasgi(websocket.scope, websocket.receive, websocket.send)
+            await room.serve(websocket)
         finally:
             sockets[token].discard(websocket)
-
-    @asynccontextmanager
-    async def lifespan(app: Starlette):
-        async with yserver:
-            doc = (await yserver.get_room(ROOM)).ydoc
-            for lang, code in TEMPLATES.items():
-                doc[f"code:{lang}"] = Text(code)
-            doc["state"] = Map({"lang": "cpp"})
-            doc["output"] = Text()
-            yield
 
     def require_interviewer(request: Request) -> None:
         s = current(request)
@@ -234,6 +289,5 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
             WebSocketRoute(ROOM, ws),
             Mount("/", Static(directory=static_dir, html=True, check_dir=False)),
         ],
-        lifespan=lifespan,
         middleware=[Middleware(CrossOriginIsolation)],
     )

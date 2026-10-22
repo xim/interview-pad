@@ -3,7 +3,6 @@ import EditorWorker from 'monaco-editor/editor/editor.worker?worker';
 import TsWorker from 'monaco-editor/language/typescript/ts.worker?worker';
 import { MonacoBinding } from 'y-monaco';
 import { WebsocketProvider } from 'y-websocket';
-import { removeAwarenessStates } from 'y-protocols/awareness';
 import * as Y from 'yjs';
 import { $, api, route, type Me } from './main';
 import { setupRun, splitArgs } from './run';
@@ -178,9 +177,6 @@ export function startPad(me: Me) {
   endButton.hidden = me.role !== 'interviewer';
   endButton.onclick = async () => {
     if (!confirm('End the interview? This disconnects all candidates.')) return;
-    await api('end', {});
-    // kicked clients can't announce leaving, and the server doesn't track awareness per socket
-    const candidates = [...awareness.getStates()].filter(([, s]) => s.user?.role === 'candidate').map(([id]) => id);
-    removeAwarenessStates(awareness, candidates, 'end');
+    await api('end', {}); // the server drops kicked clients' cursors itself
   };
 }

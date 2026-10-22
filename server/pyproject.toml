@@ -3,7 +3,7 @@ name = "interview-pad-server"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "pycrdt-websocket>=0.16.5",
+    "pycrdt>=0.14.8",
     "starlette>=1.7.0",
     "uvicorn>=0.54.0",
     "websockets>=17.2",
