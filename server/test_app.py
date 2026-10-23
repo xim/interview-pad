@@ -18,7 +18,7 @@ from pycrdt import (
 )
 from starlette.websockets import WebSocketDisconnect
 
-from app import ROOM, TEMPLATES, create_app
+from app import ROOM, TEMPLATES, TOKEN_HEADER, create_app
 
 
 @pytest.fixture
@@ -29,7 +29,9 @@ def app():
 @pytest.fixture
 def interviewer(app):
     c = TestClient(app)
-    assert c.post("/api/login", json={"password": "pw"}).status_code == 200
+    r = c.post("/api/login", json={"password": "pw"})
+    assert r.status_code == 200
+    c.headers[TOKEN_HEADER] = r.json()["token"]
     return c
 
 
@@ -105,7 +107,7 @@ def test_join_bad_name(app, name):
 @pytest.mark.parametrize("admit, status", [(True, "admitted"), (False, "denied")])
 def test_admit_flow(app, interviewer, admit, status):
     cand = TestClient(app)
-    assert cand.post("/api/join", json={"name": " Ada "}).json() == {"name": "Ada", "role": "candidate", "status": "pending"}
+    assert cand.post("/api/join", json={"name": " Ada "}).json().items() >= {"name": "Ada", "role": "candidate", "status": "pending"}.items()
     pending = interviewer.get("/api/pending").json()
     assert [p["name"] for p in pending] == ["Ada"]
     assert interviewer.post(f"/api/admit/{pending[0]['id']}", json={"admit": admit}).status_code == 200
@@ -191,7 +193,7 @@ def test_ws_sync_seeded_doc(app):
 
 def test_demo_gets_a_private_room(app, interviewer):
     with TestClient(app) as d:
-        assert d.post("/api/demo").json() == {"name": "Demo", "role": "demo", "status": "admitted"}
+        assert d.post("/api/demo").json().items() >= {"name": "Demo", "role": "demo", "status": "admitted"}.items()
         assert d.get("/api/pending").status_code == 403
         assert interviewer.get("/api/pending").json() == []  # not a join request
         with d.websocket_connect(ROOM) as ws:
@@ -207,10 +209,23 @@ def test_demo_gets_a_private_room(app, interviewer):
 
 def test_logout(app):
     c = TestClient(app)
-    c.post("/api/demo")
+    token = c.post("/api/demo").json()["token"]
     assert c.get("/api/me").status_code == 200
-    assert c.post("/api/logout").status_code == 200
+    assert c.post("/api/logout").status_code == 403  # the cookie alone isn't enough
+    assert c.post("/api/logout", headers={TOKEN_HEADER: token}).status_code == 200
     assert c.get("/api/me").status_code == 401
+
+
+def test_cookie_without_token_cannot_act(app, interviewer):
+    """What code run in the interviewer's browser (in a worker: cookie, but no token) could try."""
+    TestClient(app).post("/api/join", json={"name": "Ada"})
+    pid = interviewer.get("/api/pending").json()[0]["id"]
+    bare = TestClient(app, cookies=interviewer.cookies)
+    assert bare.get("/api/me").status_code == 200
+    assert bare.get("/api/pending").status_code == 403
+    assert bare.post(f"/api/admit/{pid}", json={"admit": True}).status_code == 403
+    assert bare.post("/api/end").status_code == 403
+    assert bare.post("/api/logout").status_code == 403
 
 
 def test_demo_rooms_are_capped(app):

@@ -11,21 +11,38 @@ class ApiError extends Error {
 
 let hasSession = false;
 
+// Sent besides the cookie: code we run (always in workers) can't read localStorage, so it can't act as the user.
+const TOKEN = 'token';
+let token = '';
+try {
+  token = localStorage.getItem(TOKEN) ?? '';
+} catch {}
+function setToken(value: string) {
+  token = value;
+  try {
+    localStorage.setItem(TOKEN, value);
+  } catch {}
+}
+
 export async function api<T>(path: string, body?: unknown): Promise<T> {
-  const r = await fetch(`api/${path}`, body === undefined ? {} : {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  const r = await fetch(`api/${path}`, {
+    headers: { 'X-Pad-Token': token, ...(body !== undefined && { 'Content-Type': 'application/json' }) },
+    ...(body !== undefined && { method: 'POST', body: JSON.stringify(body) }),
   });
   // sessions live in server memory, so a restart (or cleared cookie) silently invalidates ours
   if (hasSession && (r.status === 401 || r.status === 403)) sessionLost();
   if (!r.ok) throw new ApiError(r.status, await r.text());
-  return r.json();
+  const data = await r.json();
+  if (data.token) setToken(data.token);
+  return data;
 }
+
+export const forgetToken = () => setToken('');
 
 const NOTICE = 'notice';
 
 function sessionLost() {
+  forgetToken();
   try {
     sessionStorage.setItem(NOTICE, 'Your session ended (the server may have restarted). Please join or log in again.');
   } catch {}

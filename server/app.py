@@ -33,6 +33,9 @@ from starlette.websockets import WebSocket
 log = logging.getLogger("uvicorn.error")
 
 COOKIE = "session"
+# Code run by a participant's browser (in a worker) sends their cookie too, but can't read this token, which the page
+# keeps in localStorage: required for acting on someone's behalf (admit, end, logout, listing join requests).
+TOKEN_HEADER = "x-pad-token"
 MAX_NAME = 40
 MAX_PENDING = 10  # anyone with the URL can ask to join
 MAX_DEMOS = 20  # solo sandboxes, each with its own room; the oldest is evicted
@@ -171,6 +174,7 @@ class Session:
     role: str  # "interviewer" | "candidate" | "demo"
     status: str  # "pending" | "admitted" | "denied" | "ended"
     id: str = field(default_factory=lambda: secrets.token_urlsafe(8))
+    csrf: str = field(default_factory=lambda: secrets.token_urlsafe(32))
 
 
 def create_app(password: str | None = None, secure_cookies: bool = True, static_dir=STATIC_DIR) -> Starlette:
@@ -209,9 +213,12 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
         finally:
             sockets[token].discard(websocket)
 
+    def has_token(request: Request, s: Session) -> bool:
+        return secrets.compare_digest(request.headers.get(TOKEN_HEADER, "").encode(), s.csrf.encode())
+
     def require_interviewer(request: Request) -> None:
         s = current(request)
-        if s is None or s.role != "interviewer":
+        if s is None or s.role != "interviewer" or not has_token(request, s):
             raise HTTPException(403)
 
     async def json_body(request: Request) -> dict:
@@ -226,7 +233,7 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
     def start_session(s: Session) -> Response:
         token = secrets.token_urlsafe(32)
         sessions[token] = s
-        response = JSONResponse(me_json(s))
+        response = JSONResponse({**me_json(s), "token": s.csrf})
         response.set_cookie(COOKIE, token, httponly=True, samesite="strict", secure=secure_cookies)
         return response
 
@@ -255,6 +262,9 @@ def create_app(password: str | None = None, secure_cookies: bool = True, static_
 
     async def logout(request: Request) -> Response:
         token = request.cookies.get(COOKIE, "")
+        s = sessions.get(token)
+        if s and not has_token(request, s):
+            raise HTTPException(403)
         if s := sessions.pop(token, None):
             demo_rooms.pop(s.id, None)
             for websocket in list(sockets.get(token, ())):

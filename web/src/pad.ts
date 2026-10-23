@@ -4,7 +4,7 @@ import TsWorker from 'monaco-editor/language/typescript/ts.worker?worker';
 import { MonacoBinding } from 'y-monaco';
 import { WebsocketProvider } from 'y-websocket';
 import * as Y from 'yjs';
-import { $, api, route, type Me } from './main';
+import { $, api, forgetToken, route, type Me } from './main';
 import { setupRun, splitArgs } from './run';
 import { configureClangd, startClangd } from './clangd';
 import { registerPythonIntelligence } from './completion';
@@ -180,6 +180,7 @@ export function startPad(me: Me) {
     endButton.onclick = async () => {
       provider.destroy(); // so the closing socket isn't taken for a lost session
       await api('logout', {});
+      forgetToken();
       location.reload();
     };
   } else endButton.onclick = async () => {
