@@ -152,6 +152,12 @@ try {
   await iv.keyboard.type('ggOvim_ok');
   await iv.keyboard.press('Escape');
   await cand.waitForFunction(() => editorText().startsWith('vim_ok'));
+  // % from before a bracket scans forward to it (monaco-vim only handled the cursor being on one); human typing speed
+  await iv.keyboard.type('ccx = f(a, g(b))', { delay: 30 });
+  await iv.keyboard.press('Escape');
+  await iv.keyboard.type('0c%Z', { delay: 80 });
+  await iv.keyboard.press('Escape');
+  await cand.waitForFunction(() => editorText().startsWith('Z\n') || editorText().startsWith('Z'));
   await toggleSetting(iv, 'vim');
   step('vim mode edit synced');
   await iv.click('#settings');

@@ -1,9 +1,28 @@
 import * as monaco from 'monaco-editor';
 
 declare const __BUILD_TIME__: string; // vite.config.ts
-import { initVimMode } from 'monaco-vim';
+import { initVimMode, VimMode } from 'monaco-vim';
 import { configureClangd } from './clangd';
 import { $ } from './main';
+
+type CmPos = { line: number; ch: number };
+type Cm = { getLine(line: number): string; findMatchingBracket(pos: CmPos): { to: CmPos | null } };
+const { Vim, Pos } = VimMode as unknown as {
+  Vim: { defineMotion(name: string, fn: (cm: Cm, head: CmPos) => CmPos): void };
+  Pos: new (line: number, ch: number) => CmPos;
+};
+
+// monaco-vim's % only acts with the cursor on a bracket; Vim scans forward along the line to the first one
+// (brackets in strings/comments have no match in Monaco, so they're skipped).
+Vim.defineMotion('moveToMatchedSymbol', (cm, head) => {
+  const text = cm.getLine(head.line);
+  for (let ch = head.ch; ch < text.length; ch++) {
+    if (!'()[]{}'.includes(text[ch])) continue;
+    const { to } = cm.findMatchingBracket(new Pos(head.line, ch));
+    if (to) return to;
+  }
+  return head;
+});
 
 // Per viewer, remembered in localStorage.
 type Settings = { vim: boolean; completion: boolean; inlayHints: boolean; theme: string };
