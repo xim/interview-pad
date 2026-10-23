@@ -158,6 +158,7 @@ try {
   await iv.keyboard.type('0c%Z', { delay: 80 });
   await iv.keyboard.press('Escape');
   await cand.waitForFunction(() => editorText().startsWith('Z\n') || editorText().startsWith('Z'));
+  if (!(await iv.evaluate(() => window.onbeforeunload !== null))) throw new Error('no close guard in the pad');
   await toggleSetting(iv, 'vim');
   step('vim mode edit synced');
   await iv.click('#settings');

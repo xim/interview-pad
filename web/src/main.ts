@@ -41,7 +41,11 @@ export const forgetToken = () => setToken('');
 
 const NOTICE = 'notice';
 
+// Ctrl+W (readline/Vim "delete word") closes the tab, and pages can't intercept it: ask before leaving a pad.
+export const guardUnload = (on: boolean) => (window.onbeforeunload = on ? (e) => e.preventDefault() : null);
+
 function sessionLost() {
+  guardUnload(false);
   forgetToken();
   try {
     sessionStorage.setItem(NOTICE, 'Your session ended (the server may have restarted). Please join or log in again.');
@@ -69,6 +73,7 @@ export function route(me: Me) {
 
 async function enterPad(me: Me) {
   show('pad');
+  guardUnload(true);
   (await import('./pad')).startPad(me);
   if (me.role === 'interviewer') pollRequests();
 }
