@@ -1,7 +1,5 @@
 # TODO
 
-- Run user code in a sandboxed iframe (opaque origin): today code run by the interviewer can call the API with the
-  interviewer's session (e.g. admit someone, end the interview).
 - Configurable run time limit (env var or interviewer setting), or other options than a fixed 10 s wall clock.
 - Make the rest of the page follow the Monaco theme (and system theme?).
 - Use xterm.js for interactive stdin?

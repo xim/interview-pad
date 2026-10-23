@@ -3,6 +3,8 @@
 Real-time collaborative code editor for interviews. Code runs **in the browser** (WASM) of whoever clicks Run,
 and the output is shared. Python backend, one instance per interview, in-memory only. Open items: [TODO.md](TODO.md).
 
+![interview-pad: a C++ program compiled and run, with a remote cursor and Vim mode](docs/screenshot.png)
+
 ## Features
 
 - Interviewer logs in with a password; candidates join with a name and wait to be admitted. "End interview"
@@ -14,6 +16,14 @@ and the output is shared. Python backend, one instance per interview, in-memory 
 - C/C++ catch UB at run time (UBSan, libc++ hardening) with source locations and backtraces.
 - Completion/hover: TypeScript (Monaco), Python (Jedi), C/C++ (clangd, optional build).
 - Colored, terminal-style output.
+
+## Prerequisites
+
+- To build and run the image: podman (rootless is fine), plus what `tools/clang/build.sh` needs: git, cmake, make,
+  ccache, python3 and a C++ compiler. `tools/clangd/build.sh` (optional) needs the same minus ccache.
+- For development: Node.js 24, Python 3.13 with [uv](https://docs.astral.sh/uv/), and Google Chrome for the
+  end-to-end test (`CHROME=/path/to/chrome` to use another binary).
+- The install scripts download Pyodide packages and LLVM sources; if `npm install` fails on a flaky network, rerun it.
 
 ## Build and run (podman, rootless)
 
@@ -35,14 +45,14 @@ podman run --rm --read-only --cap-drop=all --security-opt=no-new-privileges \
 `tools/clang/build.sh` builds the in-browser Clang/LLD (LLVM 22.1.8) into `tools/clang/dist/package/`, which
 `web/package.json` depends on, so run it before `npm install` or `podman build`. It uses
 [YoWASP](https://github.com/YoWASP/clang)'s recipe with their WASI patch plus a fix (`tools/clang/wasi.patch`); the
-published `@yowasp/clang` package is an older LLVM 22 snapshot. Needs git, cmake, make, ccache, python3 and a C++
-compiler; ~20 min on 32 cores, ~6 GB in `~/.cache/interview-pad-yowasp` (reruns are incremental).
+published `@yowasp/clang` package is an older LLVM 22 snapshot. ~20 min on 32 cores, ~6 GB in
+`~/.cache/interview-pad-yowasp` (reruns are incremental).
 
 ### C/C++ IntelliSense (clangd)
 
 `tools/clangd/build.sh` builds clangd for the browser into `web/public/clangd/`, which `podman build` then
-includes. It needs git, cmake, make and a C++ compiler; it takes ~10 min on 32 cores and keeps ~6 GB of sources and
-build files in `~/.cache/interview-pad-clangd` (reruns are incremental). Without it, C/C++ still compile and run.
+includes. It takes ~10 min on 32 cores and keeps ~6 GB of sources and build files in `~/.cache/interview-pad-clangd`
+(reruns are incremental). Without it, C/C++ still compile and run.
 
 Per participant, on first selecting C or C++: 58 MB download (16 MB gzipped), ~0.5 GB RAM, ~3 s to the first
 completion (~1.6 s once cached).
@@ -72,7 +82,7 @@ cd web && npm install && npm run dev    # http://localhost:5173, proxies api/ an
 
 cd server && uv run pytest
 cd web && npm run check                 # type-check
-cd web && npm run build && npm run e2e  # fresh server + two headless Chrome sessions (CHROME=... to override)
+cd web && npm run build && npm run e2e  # fresh server + headless Chrome sessions
 ```
 
 ## License
