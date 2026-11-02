@@ -14,15 +14,15 @@ self.MonacoEnvironment = {
   getWorker: (_id, label) => (label === 'typescript' || label === 'javascript' ? new TsWorker() : new EditorWorker()),
 };
 
-const COMMON_FLAGS = '-O2 -Wall -Wextra';
+const COMMON_FLAGS = '-Wall -Wextra';
 
 export const LANGS = {
-  c: { label: 'C', monaco: 'c', file: 'main.c', flags: `-std=c2y ${COMMON_FLAGS}` },
+  c: { label: 'C', monaco: 'c', file: 'main.c', flags: `-std=c2y -O2 ${COMMON_FLAGS}` },
   cpp: {
     label: 'C++',
     monaco: 'cpp',
     file: 'main.cpp',
-    flags: `-std=c++26 ${COMMON_FLAGS}`,
+    flags: `-std=c++26 -O1 ${COMMON_FLAGS}`,
   },
   python: { label: 'Python', monaco: 'python', file: 'main.py' },
   ts: { label: 'TypeScript', monaco: 'typescript', file: 'main.ts' },
