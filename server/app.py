@@ -45,7 +45,7 @@ ROOM = "/ws/pad"  # y-websocket connects to <url>/<room name>
 TEMPLATES = {
     "c": """#include <stdio.h>
 
-int main(void) {
+int main(int, char *[]) {
     printf("Hello from %s\\n", "C");
 }
 """,
@@ -56,7 +56,7 @@ std::string greet(std::string const & name) {
     return "Hello from " + name;
 }
 
-int main() {
+int main(int, char *[]) {
     std::cout << greet("C++") << '\\n';
 }
 """,
