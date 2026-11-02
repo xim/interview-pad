@@ -52,7 +52,7 @@ int main(void) {
     "cpp": """#include <iostream>
 #include <string>
 
-std::string greet(const std::string& name) {
+std::string greet(std::string const & name) {
     return "Hello from " + name;
 }
 
