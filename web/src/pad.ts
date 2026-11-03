@@ -49,6 +49,7 @@ export function startPad(me: Me) {
     minimap: { enabled: false },
     padding: { top: 16 }, // room for remote cursor labels on line 1
     fontSize: 14,
+    pasteAs: { enabled: false },
   });
   registerPythonIntelligence(() => settings.completion);
   const models = {} as Record<Lang, monaco.editor.ITextModel>;
