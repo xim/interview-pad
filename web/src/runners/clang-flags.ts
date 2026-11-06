@@ -8,16 +8,20 @@ const TARGET = ['--target=wasm32-wasip1-threads', '-pthread'];
 const STACK = ['-Wl,-z,stack-size=8388608', '-Wl,--stack-first'];
 // wasi-threads: every thread instantiates the module on the same imported memory; shared memory needs a maximum
 const MEMORY = ['-Wl,--import-memory,--export-memory,--max-memory=4294967296'];
-// wasi-libc's mmap emulation (malloc + pread), so <sys/mman.h> works for reading files
-const MMAN = ['-D_WASI_EMULATED_MMAN', '-Wl,-lwasi-emulated-mman'];
+// wasi-libc's emulations, otherwise errors: mmap (malloc + pread, so for reading files), clock() (wall time),
+// signal()/raise() within the program, getpid() (a placeholder). Only linked in when used.
+const EMULATED = ['MMAN', 'PROCESS_CLOCKS', 'SIGNAL', 'GETPID'].flatMap((name) => [
+  `-D_WASI_EMULATED_${name}`,
+  `-Wl,-lwasi-emulated-${name.toLowerCase().replace('_', '-')}`,
+]);
 
 export const HIDDEN_FLAGS = {
-  c: [...TARGET, ...STACK, ...MEMORY, ...MMAN, '-fsanitize=undefined', '-fno-sanitize-recover=all'],
+  c: [...TARGET, ...STACK, ...MEMORY, ...EMULATED, '-fsanitize=undefined', '-fno-sanitize-recover=all'],
   cpp: [
     ...TARGET,
     ...STACK,
     ...MEMORY,
-    ...MMAN,
+    ...EMULATED,
     // the sysroot's libc++ uses exnref exceptions, not yet clang's default; the tag export lets wasi.worker.ts
     // report uncaught ones
     '-fwasm-exceptions',

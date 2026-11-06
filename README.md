@@ -103,6 +103,8 @@ MIT, see [LICENSE](LICENSE). Third-party notices are generated into `licenses.tx
   (and a notice).
 - C/C++ `mmap` is wasi-libc's emulation (a copy): writes through `MAP_SHARED` don't reach the file; no `msync`,
   `MAP_FIXED` or partial `munmap`.
+- C/C++ `clock()` measures wall time, `getpid()` is a placeholder, and signals come only from `raise()` (wasi-libc's
+  emulations).
 - TS: the program ends when the module finishes evaluating; pending timers are dropped.
 - TS: `fs`/`node:fs` is an in-memory subset (`readFileSync`, `writeFileSync`, `appendFileSync`, `existsSync`, `mkdirSync`,
   `readdirSync`, `rmSync`, `unlinkSync`); no other Node modules.
