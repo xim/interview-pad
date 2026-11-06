@@ -12,3 +12,5 @@
 - Other (non-network) functions we might want to allow or expose.
 - Hovering an `#include` line offers "Follow link", which fails (`No text model for uri file:///usr/include/...`, a
   page error); disable it, or open headers read-only.
+- Check that the hardware concurrency (nproc) is reported sensibly in each language, and what the implications are
+  (C/C++ `hardware_concurrency()` is 1 for now: code that sizes its thread count from it runs single-threaded).
