@@ -5,11 +5,18 @@ const post = (text: string) => postMessage({ type: 'out', text });
 
 // Fresh __main__ globals per run; returns the exit code. Drops the harness frame from tracebacks.
 const HARNESS = `
-import os, sys, traceback
+import os, shutil, sys, traceback
 
 os.environ["FORCE_COLOR"] = "1"  # e.g. pytest/rich colors; the output pane renders ANSI
+HOME = os.getcwd()
 
 def run(src, argv):
+    # files are fresh each run, as for C/C++ (the worker, and so its in-memory filesystem, outlives runs)
+    os.chdir("/")  # the current directory can't be removed
+    for d in (HOME, "/tmp"):
+        shutil.rmtree(d)
+        os.mkdir(d)
+    os.chdir(HOME)
     # a real file: tracebacks show source lines, and tools like pytest can import it
     with open("main.py", "w") as f:
         f.write(src)

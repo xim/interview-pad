@@ -189,6 +189,8 @@ try {
   await runCase(cand, iv, 'python', 'x = 1 / 0', 'File "main.py", line 1, in <module>\n    x = 1 / 0\n');
   await runCase(cand, iv, 'python', 'import numpy as np, yaml, tomllib; print(np.arange(4).sum(), yaml.safe_load("a: 1"), tomllib.loads("b = 2"))', "6 {'a': 1} {'b': 2}");
   await runCase(cand, iv, 'python', 'import scipy', "ModuleNotFoundError: No module named 'scipy'");
+  await runCase(cand, iv, 'python', 'import os; print("files", os.listdir("."), open("f.txt", "a").write("x")); os.chdir("/")', "files ['main.py'] 1");
+  await runCase(cand, iv, 'python', null, "files ['main.py'] 1"); // a second run starts fresh, in the same directory
   await runCase(cand, iv, 'python', 'import pandas as pd; print(pd.DataFrame({"a": [1, 2]}).a.sum())', '3');
   await runCase(cand, iv, 'python', 'import pytest\ndef test_x(): assert 1 + 1 == 3\nif __name__ == "__main__": pytest.main(["-q", "main.py"])', '1 failed');
   await runCase(cand, iv, 'python', 'import asyncio\nasync def f(i): await asyncio.sleep(0.1); return i\nasync def main(): return await asyncio.gather(f(1), f(2))\nprint("async", asyncio.run(main()))', 'async [1, 2]');
