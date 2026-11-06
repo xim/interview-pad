@@ -282,6 +282,9 @@ try {
   await runCase(cand, iv, 'c', 'int f(int n) { return f(n + 1) + 1; }\nint main(void) { return f(0); }', '[Crashed: Maximum call stack size exceeded]');
   await runCase(cand, iv, 'c', '#include <pthread.h>\n#include <stdio.h>\nvoid *f(void *a) { int x = 2147483647; x += (int)(long)a; return 0; }\nint main(void) { pthread_t t; pthread_create(&t, 0, f, (void *)1); pthread_join(t, 0); puts("not reached"); }', 'main.c:3:42: runtime error: signed integer overflow\n\n[Aborted]\n');
   await runCase(cand, iv, 'c', '#include <pthread.h>\n#include <stdio.h>\nvoid *f(void *a) { for (;;); return a; }\nint main(void) { pthread_t t; pthread_create(&t, 0, f, 0); puts("main returns"); }', 'main returns');
+  await runCase(cand, iv, 'c', '#include <stdio.h>\nint main(void) { FILE *f = fopen("a.txt", "r"); printf("%s ", f ? "stale" : "fresh"); f = fopen("a.txt", "w"); fputs("filed", f); fclose(f); char s[8]; f = fopen("a.txt", "r"); fscanf(f, "%7s", s); printf("%s %s\\n", s, fopen("/tmp/b", "w") ? "tmp" : "-"); }', 'fresh filed tmp');
+  await runCase(cand, iv, 'c', null, 'fresh filed tmp'); // a second run starts empty again
+  await runCase(cand, iv, 'c', '#include <pthread.h>\n#include <stdio.h>\nvoid *f(void *a) { puts(fopen("x", "w") ? "opened" : "failed"); return a; }\nint main(void) { pthread_t t; pthread_create(&t, 0, f, 0); pthread_join(t, 0); }', '[file I/O is only available on the main thread]\nfailed');
   await runCase(cand, iv, 'c', '#include <stdio.h>\n#include <string.h>\nint main(void) { char big[1 << 20]; memset(big, 1, sizeof big); printf("%d", big[12345]); }', '1');
   await runCase(cand, iv, 'c', '#include <stdio.h>\n#include <string.h>\nint main(void) { char big[16 << 20]; memset(big, 1, sizeof big); printf("%d", big[12345]); }', '[Segmentation fault]');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 139'));

@@ -1,8 +1,9 @@
-import { ConsoleStdout, File, OpenFile, WASI, WASIProcExit } from '@bjorn3/browser_wasi_shim';
+import { ConsoleStdout, Directory, File, OpenFile, PreopenDirectory, WASI, WASIProcExit } from '@bjorn3/browser_wasi_shim';
 
 const SIGABRT_EXIT = 134;
 const SIGSEGV_EXIT = 139;
 const EAGAIN = 6;
+const ENOTSUP = 58;
 const POOL = 16; // threads that can run at once; more fail with EAGAIN
 // ctl: [last thread id, then per pool worker: state, tid, arg]; state 0 idle, 1 being assigned, 2 assigned
 const SLOT = 3;
@@ -87,7 +88,15 @@ class SharedStdin extends OpenFile {
   }
 }
 
-type Program = { module: WebAssembly.Module; memory: WebAssembly.Memory; ctl: Int32Array; stdinPos: Int32Array; args: string[]; stdin: Uint8Array };
+type Program = {
+  module: WebAssembly.Module;
+  memory: WebAssembly.Memory;
+  ctl: Int32Array;
+  stdinPos: Int32Array;
+  fileNotice: Int32Array; // set once the notice below was shown
+  args: string[];
+  stdin: Uint8Array;
+};
 type Exports = {
   _start: () => void;
   wasi_thread_start: (tid: number, arg: number) => void;
@@ -96,13 +105,29 @@ type Exports = {
   __cpp_exception?: WebAssembly.Tag;
 };
 
-function instantiate(p: Program) {
+function instantiate(p: Program, thread: boolean) {
   let pending = '';
   const output = () => {
     const decoder = new TextDecoder();
     return new ConsoleStdout((bytes) => (pending += decoder.decode(bytes, { stream: true })));
   };
-  const wasi = new WASI(['./a.out', ...p.args], [], [new SharedStdin(p.stdin, p.stdinPos), output(), output()]);
+  const stdio = [new SharedStdin(p.stdin, p.stdinPos), output(), output()];
+  // a fresh in-memory filesystem per run, for the main thread only: threads have their own WASI state
+  const root = new PreopenDirectory('/', new Map([['tmp', new Directory(new Map())]]));
+  const wasi = new WASI(['./a.out', ...p.args], [], [...stdio, root]);
+  if (thread) {
+    for (const [name, call] of Object.entries(wasi.wasiImport)) {
+      if (!/^(path_|fd_)/.test(name)) continue;
+      wasi.wasiImport[name] = (...args: number[]) => {
+        // the preopen probe (libc's table is shared, and may be filled from any thread) and stdio work everywhere
+        if (name.startsWith('fd_prestat_') || (name.startsWith('fd_') && args[0] <= 2)) return call(...args);
+        if (Atomics.exchange(p.fileNotice, 0, 1) === 0) {
+          postMessage({ type: 'out', text: '\n\x1b[1;33m[file I/O is only available on the main thread]\x1b[0m\n' });
+        }
+        return ENOTSUP;
+      };
+    }
+  }
   const { fd_write, poll_oneoff } = wasi.wasiImport;
   // one message per write, so a line isn't split around another thread's output
   wasi.wasiImport.fd_write = (...args) => {
@@ -170,7 +195,7 @@ onmessage = async ({ data }: MessageEvent<Message>) => {
     const i = 1 + p.slot * SLOT;
     for (;;) {
       while (Atomics.load(p.ctl, i) !== 2) Atomics.wait(p.ctl, i, Atomics.load(p.ctl, i));
-      const exports = instantiate(p);
+      const exports = instantiate(p, true);
       const code = run(exports, () => exports.wasi_thread_start(p.ctl[i + 1], p.ctl[i + 2]));
       if (code !== undefined) postMessage({ type: 'exit', code }); // exit() or a crash in a thread ends the program
       Atomics.store(p.ctl, i, 0);
@@ -182,6 +207,7 @@ onmessage = async ({ data }: MessageEvent<Message>) => {
     memory: new WebAssembly.Memory(memoryLimits(data.wasm)!),
     ctl: new Int32Array(new SharedArrayBuffer(4 * (1 + POOL * SLOT))),
     stdinPos: new Int32Array(new SharedArrayBuffer(4)),
+    fileNotice: new Int32Array(new SharedArrayBuffer(4)),
     args: data.args,
     stdin: new TextEncoder().encode(data.stdin),
   };
@@ -189,6 +215,6 @@ onmessage = async ({ data }: MessageEvent<Message>) => {
   if (WebAssembly.Module.imports(module).some((i) => i.module === 'wasi' && i.name === 'thread-spawn')) {
     postMessage({ type: 'threads', thread: p, pool: POOL });
   }
-  const exports = instantiate(p);
+  const exports = instantiate(p, false);
   postMessage({ type: 'exit', code: run(exports, () => exports._start()) ?? 0 });
 };
