@@ -221,6 +221,7 @@ try {
   await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v; return v.at(1); }', "terminate called after throwing an instance of 'std::out_of_range'\n  what():  vector\n");
   await runCase(cand, iv, 'cpp', '#include <cstdio>\n#include <stdexcept>\nint main() { try { throw std::runtime_error("boom"); } catch (const std::exception& e) { std::puts(e.what()); } }', 'boom');
   await runCase(cand, iv, 'cpp', '#include <cstdio>\n#include <stdexcept>\n#include <string>\nint main() { try { (void)std::stoi("x"); } catch (const std::invalid_argument& e) { std::puts("caught from libc++"); } }', 'caught from libc++');
+  await runCase(cand, iv, 'cpp', '#include <atomic>\n#include <cstdio>\n#include <thread>\n#include <vector>\nint main() { std::atomic<int> n = 0; { std::vector<std::jthread> ts; for (int i = 0; i < 4; i++) ts.emplace_back([&] { for (int j = 0; j < 100000; j++) n++; }); } std::printf("threads %d\\n", n.load()); }', 'threads 400000');
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::printf("buffered "); throw 42; }', "buffered terminate called after throwing an instance of 'int'");
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));
@@ -279,6 +280,8 @@ try {
   await runCase(cand, iv, 'c', '#include <stdlib.h>\n__attribute__((noinline)) void f(void) { abort(); }\nint main(void) { f(); }', '[Aborted]\n    at f\n    at main\n');
   await runCase(cand, iv, 'c', '#include <stdio.h>\nint main(int argc, char** argv) { int* p = argc > 5 ? &argc : 0; printf("%d", *p); }', 'main.c:2:79: runtime error: load of null pointer of type \'int\'');
   await runCase(cand, iv, 'c', 'int f(int n) { return f(n + 1) + 1; }\nint main(void) { return f(0); }', '[Crashed: Maximum call stack size exceeded]');
+  await runCase(cand, iv, 'c', '#include <pthread.h>\n#include <stdio.h>\nvoid *f(void *a) { int x = 2147483647; x += (int)(long)a; return 0; }\nint main(void) { pthread_t t; pthread_create(&t, 0, f, (void *)1); pthread_join(t, 0); puts("not reached"); }', 'main.c:3:42: runtime error: signed integer overflow\n\n[Aborted]\n');
+  await runCase(cand, iv, 'c', '#include <pthread.h>\n#include <stdio.h>\nvoid *f(void *a) { for (;;); return a; }\nint main(void) { pthread_t t; pthread_create(&t, 0, f, 0); puts("main returns"); }', 'main returns');
   await runCase(cand, iv, 'c', '#include <stdio.h>\n#include <string.h>\nint main(void) { char big[1 << 20]; memset(big, 1, sizeof big); printf("%d", big[12345]); }', '1');
   await runCase(cand, iv, 'c', '#include <stdio.h>\n#include <string.h>\nint main(void) { char big[16 << 20]; memset(big, 1, sizeof big); printf("%d", big[12345]); }', '[Segmentation fault]');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 139'));

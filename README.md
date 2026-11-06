@@ -13,6 +13,7 @@ and the output is shared. Python backend, one instance per interview, in-memory 
 - Shared Monaco editor with live cursors/selections; per-person Vim bindings, completion toggle and theme.
 - C, C++ (clang 23, C++26 by default, exceptions), Python 3.14 (Pyodide, numpy/pandas/pytest/… on import) and
   TypeScript. Shared compiler flags, program arguments and stdin.
+- C/C++ threads (pthreads, `std::thread`/`async`/`jthread`): each thread runs in its own Web Worker on shared memory.
 - C/C++ catch UB at run time (UBSan, libc++ hardening) with source locations and backtraces.
 - Completion/hover: TypeScript (Monaco), Python (Jedi), C/C++ (clangd, optional build).
 - Colored, terminal-style output.
@@ -96,5 +97,7 @@ MIT, see [LICENSE](LICENSE). Third-party notices are generated into `licenses.tx
 - Runs are killed after 10 s of execution (download and compile time don't count); output is capped at 64 KB.
 - C++ needs WebAssembly exception handling with `exnref` (current Chrome, Firefox and Safari).
 - No ASan. Null/out-of-bounds accesses that UBSan and hardening don't catch silently succeed (WASM memory).
+- C/C++ threads: at most 16 at once (more fail with `EAGAIN`); `hardware_concurrency()` is 1; no `pthread_exit`
+  or C11 `thrd_*` (wasi-libc lacks them).
 - TS: the program ends when the module finishes evaluating; pending timers are dropped.
 - Python: stdlib plus the packages listed in `web/scripts/pyodide.mjs`.

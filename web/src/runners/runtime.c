@@ -3,6 +3,7 @@
 //   Built with -fno-sanitize-recover=all, so only the noreturn variants are needed. Exact arities matter:
 //   on WASM a signature mismatch links to a trapping stub instead of failing.
 // - Crash helpers exported for wasi.worker.ts.
+// - Threads' default stack size.
 #pragma clang diagnostic ignored "-Weverything"
 
 #include <stdint.h>
@@ -84,6 +85,11 @@ EXTERN_C NO_UBSAN __attribute__((noreturn)) void __ubsan_handle_type_mismatch_v1
         snprintf(what, sizeof what, "%s address %p with insufficient space for type %s", kind, (void*)ptr, d->type->name);
     report(&d->loc, what);
 }
+
+// Linux's 8 MB, as for main (clang-flags.ts): musl's 128 KB overflows easily, and silently with no guard page.
+// musl's default (wasi-libc lacks pthread_setattr_default_np).
+EXTERN_C extern unsigned __default_stacksize;
+__attribute__((constructor)) static void thread_stack_size(void) { __default_stacksize = 8 << 20; }
 
 // Called by wasi.worker.ts after a crash, so buffered output isn't lost.
 EXTERN_C __attribute__((export_name("__ip_flush"))) void __ip_flush(void) { fflush(NULL); }

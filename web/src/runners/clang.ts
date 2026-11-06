@@ -30,6 +30,23 @@ export const clangRunner = (lang: 'c' | 'cpp'): Runner => ({
     ctx.write(`\x1b[2mcompiled\x1b[0m ${took}\n`);
     ctx.write(echo(['./a.out', ...args]));
     ctx.start();
-    return (await runWorker(new WasiWorker(), { wasm: result.wasm, args, stdin }, ctx)).code;
+    const program = new WasiWorker();
+    // the thread pool, if the program uses threads; its messages go to runWorker's handlers for the program
+    const pool: Worker[] = [];
+    program.addEventListener('message', ({ data }) => {
+      if (data.type !== 'threads') return;
+      for (let slot = 0; slot < data.pool; slot++) {
+        const worker = new WasiWorker();
+        worker.onmessage = (e) => program.onmessage?.call(program, e);
+        worker.onerror = (e) => program.onerror?.call(program, e);
+        worker.postMessage({ thread: { ...data.thread, slot } });
+        pool.push(worker);
+      }
+    });
+    try {
+      return (await runWorker(program, { wasm: result.wasm, args, stdin }, ctx)).code;
+    } finally {
+      for (const worker of pool) worker.terminate();
+    }
   },
 });
