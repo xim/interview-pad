@@ -10,3 +10,5 @@
 - Split the language templates into files (e.g. `templates/init.<ext>`), so they're readable outside the web page.
 - In-memory file I/O for programs, e.g. reading or writing a CSV file.
 - Other (non-network) functions we might want to allow or expose.
+- Hovering an `#include` line offers "Follow link", which fails (`No text model for uri file:///usr/include/...`, a
+  page error); disable it, or open headers read-only.
