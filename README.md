@@ -101,6 +101,8 @@ MIT, see [LICENSE](LICENSE). Third-party notices are generated into `licenses.tx
 - C/C++ threads: at most 16 at once (more fail with `EAGAIN`); `hardware_concurrency()` is 1; no `pthread_exit`
   or C11 `thrd_*` (wasi-libc lacks them). File I/O works on the main thread only; elsewhere it fails with `ENOTSUP`
   (and a notice).
+- C/C++ `mmap` is wasi-libc's emulation (a copy): writes through `MAP_SHARED` don't reach the file; no `msync`,
+  `MAP_FIXED` or partial `munmap`.
 - TS: the program ends when the module finishes evaluating; pending timers are dropped.
 - TS: `fs`/`node:fs` is an in-memory subset (`readFileSync`, `writeFileSync`, `appendFileSync`, `existsSync`, `mkdirSync`,
   `readdirSync`, `rmSync`, `unlinkSync`); no other Node modules.
