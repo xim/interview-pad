@@ -1,4 +1,5 @@
 import type { PyodideAPI } from 'pyodide';
+import type { PyCallable } from 'pyodide/ffi';
 
 const post = (text: string) => postMessage({ type: 'out', text });
 
@@ -32,7 +33,7 @@ def run(src, argv):
 run
 `;
 
-let ready: Promise<{ py: PyodideAPI; run: (src: string, args: string[]) => number }> | undefined;
+let ready: Promise<{ py: PyodideAPI; run: PyCallable }> | undefined;
 
 async function init(indexURL: string) {
   const { loadPyodide } = await import(/* @vite-ignore */ `${indexURL}pyodide.mjs`);
@@ -76,5 +77,6 @@ onmessage = async ({ data }) => {
     },
   });
   postMessage({ type: 'start' });
-  postMessage({ type: 'exit', code: run(data.src, data.args) });
+  const code = 'Suspending' in WebAssembly ? await run.callPromising(data.src, data.args) : run(data.src, data.args);
+  postMessage({ type: 'exit', code });
 };

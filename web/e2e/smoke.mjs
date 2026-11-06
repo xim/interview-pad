@@ -191,6 +191,7 @@ try {
   await runCase(cand, iv, 'python', 'import scipy', "ModuleNotFoundError: No module named 'scipy'");
   await runCase(cand, iv, 'python', 'import pandas as pd; print(pd.DataFrame({"a": [1, 2]}).a.sum())', '3');
   await runCase(cand, iv, 'python', 'import pytest\ndef test_x(): assert 1 + 1 == 3\nif __name__ == "__main__": pytest.main(["-q", "main.py"])', '1 failed');
+  await runCase(cand, iv, 'python', 'import asyncio\nasync def f(i): await asyncio.sleep(0.1); return i\nasync def main(): return await asyncio.gather(f(1), f(2))\nprint("async", asyncio.run(main()))', 'async [1, 2]');
   await runCase(cand, iv, 'python', 'while True: pass', '[Killed: ran longer than the 10 s time limit]');
   await runCase(cand, iv, 'python', 'print("recovered")', 'recovered');
   await setCode(cand, 'import collections\ncollections.Coun');
