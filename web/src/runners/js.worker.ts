@@ -1,6 +1,11 @@
 // Runs one JS program as an ES module; console output is forwarded as {type: 'out'}.
 // The program ends when module evaluation settles: pending timers/promises are dropped.
+import NODE_FS from './node-fs.js?raw';
+
 const post = (text: string) => postMessage({ type: 'out', text });
+const moduleUrl = (source: string) => URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+// a blob-URL module can't resolve bare specifiers, so point imports of fs / node:fs at the in-memory one
+const FS_IMPORT = /(\b(?:from|import)\s*\(?\s*)(['"])(?:node:)?fs\2/g;
 
 function format(v: unknown): string {
   if (typeof v === 'string') return v;
@@ -27,7 +32,7 @@ onmessage = async ({ data: { code, args, stdin } }: MessageEvent<Message>) => {
   const lines = stdin.split('\n');
   if (lines.at(-1) === '') lines.pop();
   Object.assign(globalThis, { process: { argv: ['node', 'main.ts', ...args] }, prompt: () => lines.shift() ?? null });
-  const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+  const url = moduleUrl(code.replace(FS_IMPORT, `$1"${moduleUrl(NODE_FS)}"`));
   let exitCode = 0;
   try {
     await import(/* @vite-ignore */ url);

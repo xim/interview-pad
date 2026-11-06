@@ -102,4 +102,6 @@ MIT, see [LICENSE](LICENSE). Third-party notices are generated into `licenses.tx
   or C11 `thrd_*` (wasi-libc lacks them). File I/O works on the main thread only; elsewhere it fails with `ENOTSUP`
   (and a notice).
 - TS: the program ends when the module finishes evaluating; pending timers are dropped.
+- TS: `fs`/`node:fs` is an in-memory subset (`readFileSync`, `writeFileSync`, `appendFileSync`, `existsSync`, `mkdirSync`,
+  `readdirSync`, `rmSync`, `unlinkSync`); no other Node modules.
 - Python: stdlib plus the packages listed in `web/scripts/pyodide.mjs`.

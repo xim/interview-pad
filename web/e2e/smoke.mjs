@@ -172,6 +172,8 @@ try {
   step('theme setting');
   await runCase(cand, iv, 'ts', 'console.log([1, 2, 3].map((x: number) => x * 2), new Map([[1, "a"]]))', '[2,4,6] Map([[1,"a"]])');
   await runCase(iv, cand, 'ts', 'throw new Error("boom")', 'Uncaught Error: boom');
+  await runCase(iv, cand, 'ts', 'import { existsSync, readFileSync, writeFileSync } from "node:fs";\nconsole.log(existsSync("f.txt") ? "stale" : "fresh"); writeFileSync("f.txt", "filed"); console.log(readFileSync("f.txt", "utf8"));', 'fresh\nfiled');
+  await runCase(iv, cand, 'ts', null, 'fresh\nfiled'); // a second run starts fresh
   // code the interviewer runs gets their cookie, but must not be able to act as them
   await runCase(iv, cand, 'ts', 'const r = await fetch(location.origin + "/api/pending"); console.log("api status", r.status)', 'api status 403');
 
