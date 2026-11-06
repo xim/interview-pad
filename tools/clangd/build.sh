@@ -6,7 +6,7 @@
 set -euo pipefail
 
 EMSDK_VER=4.0.22
-LLVM_TAG=llvmorg-22.1.8
+LLVM_TAG=llvmorg-23.1.5
 HERE=$(cd "$(dirname "$0")" && pwd)
 OUT=$HERE/../../web/public/clangd
 WORK=${WORK:-$HOME/.cache/interview-pad-clangd}
@@ -19,9 +19,13 @@ cd "$WORK"
 (cd emsdk && ./emsdk install "$EMSDK_VER" && ./emsdk activate "$EMSDK_VER") >/dev/null
 source emsdk/emsdk_env.sh >/dev/null
 
-[[ -d llvm-project ]] || git clone --depth 1 --branch "$LLVM_TAG" https://github.com/llvm/llvm-project
+if [[ "$(cat llvm-project/.tag 2>/dev/null)" != "$LLVM_TAG" ]]; then
+  rm -rf llvm-project
+  git clone -q --depth 1 --branch "$LLVM_TAG" https://github.com/llvm/llvm-project
+  git -C llvm-project apply "$HERE/wait_stdin.patch"
+  echo "$LLVM_TAG" > llvm-project/.tag
+fi
 cd llvm-project
-[[ -f .patched ]] || { git apply "$HERE/wait_stdin.patch" && touch .patched; }
 
 cmake -S llvm -B build-native -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra" \
     -DLLVM_TARGETS_TO_BUILD=WebAssembly -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF

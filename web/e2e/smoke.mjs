@@ -220,6 +220,7 @@ try {
   await runCase(iv, cand, 'cpp', 'int main() { return x; }', '[compilation failed]');
   await runCase(cand, iv, 'cpp', '#include <vector>\nint main() { std::vector<int> v; return v.at(1); }', "terminate called after throwing an instance of 'std::out_of_range'\n  what():  vector\n");
   await runCase(cand, iv, 'cpp', '#include <cstdio>\n#include <stdexcept>\nint main() { try { throw std::runtime_error("boom"); } catch (const std::exception& e) { std::puts(e.what()); } }', 'boom');
+  await runCase(cand, iv, 'cpp', '#include <cstdio>\n#include <stdexcept>\n#include <string>\nint main() { try { (void)std::stoi("x"); } catch (const std::invalid_argument& e) { std::puts("caught from libc++"); } }', 'caught from libc++');
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::printf("buffered "); throw 42; }', "buffered terminate called after throwing an instance of 'int'");
   await runCase(cand, iv, 'cpp', '#include <cstdio>\nint main() { std::puts("bye"); return 7; }', 'bye');
   await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 7'));

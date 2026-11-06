@@ -26,8 +26,6 @@ const warmUp = () =>
     } catch {}
   })());
 
-let libeh: Promise<Uint8Array> | undefined;
-
 // Preamble PCH, as clangd does: the leading block of #include lines is precompiled with the same flags, so re-runs
 // skip re-parsing the standard headers. Only exactly those headers, so a missing #include still fails. On a cache
 // miss it's built first and then compiled against, so the work isn't duplicated (nor done in the background).
@@ -53,13 +51,6 @@ async function buildPch(key: string, preamble: string, args: string[]) {
 }
 
 onmessage = async ({ data }) => {
-  if (data.init) {
-    libeh = fetch(`${data.init}libeh.a`).then(async (r) => {
-      if (!r.ok) throw new Error(`libeh.a: HTTP ${r.status}`);
-      return new Uint8Array(await r.arrayBuffer());
-    });
-    return;
-  }
   if (data.preload) return void warmUp();
   postMessage({ type: 'status', text: 'Compiling' });
   await warmUp();
@@ -70,7 +61,6 @@ onmessage = async ({ data }) => {
   const preamble = lang === 'cpp' ? PREAMBLE.exec(src)![0] : ''; // C compiles fast enough without
   const key = JSON.stringify([language, preamble]);
   const inputs: Record<string, string | Uint8Array> = { [source]: src, [`runtime.${lang}`]: RUNTIME };
-  if (lang === 'cpp') inputs['libeh.a'] = await libeh!;
   post(echo([name, ...flags, source]));
   // colors aren't on by default since this isn't a terminal; the output pane renders ANSI
   const args = ['-fcolor-diagnostics', '-fansi-escape-codes', ...HIDDEN_FLAGS[lang], ...flags];

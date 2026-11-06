@@ -8,13 +8,17 @@ const web = new URL('../', import.meta.url);
 const NODE_ONLY = new Set(['ws', '@types/emscripten']); // pyodide's dependencies for running under Node
 const LICENSE_FILE = /^(licen[cs]e|copying|notice|thirdpartynotices)/i;
 
+const WASI_LIBC = '2e6fb9d8ee0cdf9e431fbcabe8af3115de000a13'; // what wasi-sdk 34's sysroot is built from
+
 // Shipped without license files in their npm packages, or not from npm at all
 const UPSTREAM = [
   ['YoWASP Clang (Clang/LLD toolchain package)', 'https://raw.githubusercontent.com/YoWASP/clang/develop/LICENSE.txt'],
   ['YoWASP runtime (bundled into YoWASP Clang)', 'https://raw.githubusercontent.com/YoWASP/runtime-js/develop/LICENSE.txt'],
-  ['LLVM: Clang, LLD, libc++, libc++abi, libunwind, compiler-rt, clangd', 'https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-22.1.8/llvm/LICENSE.TXT'],
-  ['wasi-libc', 'https://raw.githubusercontent.com/WebAssembly/wasi-libc/main/LICENSE'],
-  ['musl (part of wasi-libc)', 'https://raw.githubusercontent.com/WebAssembly/wasi-libc/main/libc-top-half/musl/COPYRIGHT'],
+  ['LLVM: Clang, LLD, libc++, libc++abi, libunwind, compiler-rt, clangd', 'https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-23.1.5/llvm/LICENSE.TXT'],
+  ['wasi-sdk (C/C++ sysroot: wasi-libc, libc++, libc++abi, libunwind and compiler-rt builds)', 'https://raw.githubusercontent.com/WebAssembly/wasi-sdk/wasi-sdk-34/LICENSE'],
+  ['wasi-libc', `https://raw.githubusercontent.com/WebAssembly/wasi-libc/${WASI_LIBC}/LICENSE`],
+  ['wasi-libc (its MIT option)', `https://raw.githubusercontent.com/WebAssembly/wasi-libc/${WASI_LIBC}/LICENSE-MIT`],
+  ['musl (part of wasi-libc)', `https://raw.githubusercontent.com/WebAssembly/wasi-libc/${WASI_LIBC}/libc-top-half/musl/COPYRIGHT`],
   ['Pyodide', 'https://raw.githubusercontent.com/pyodide/pyodide/314.0.7/LICENSE'],
   ['CPython (in Pyodide)', 'https://raw.githubusercontent.com/python/cpython/v3.14.2/LICENSE'],
   ['Emscripten (runtime code in Pyodide and clangd)', 'https://raw.githubusercontent.com/emscripten-core/emscripten/4.0.22/LICENSE'],
@@ -77,8 +81,9 @@ for (const [name, { version, file_name }] of Object.entries(lock.packages).sort(
 
 const HEADER = `interview-pad third-party notices
 
-Components are used unmodified, except clangd (built from LLVM with a small stdin patch, see tools/clangd/ in the
-interview-pad sources). Source code: MPL-2.0 parts (Pyodide, DOMPurify, orjson, tqdm) at https://github.com/pyodide/pyodide,
+Components are used unmodified, except Clang/LLD (YoWASP's WASI portability patch, see tools/clang/ in the
+interview-pad sources), clangd (a small stdin patch, see tools/clangd/) and wasi-sdk's libraries (debug info
+stripped). Source code: MPL-2.0 parts (Pyodide, DOMPurify, orjson, tqdm) at https://github.com/pyodide/pyodide,
 https://github.com/cure53/DOMPurify, https://github.com/ijl/orjson, https://github.com/tqdm/tqdm; the others at the
 project pages linked from the About dialog.
 `;

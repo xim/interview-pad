@@ -8,10 +8,7 @@ import WasiWorker from './wasi.worker?worker';
 let compiler: Worker | undefined;
 
 function getCompiler() {
-  if (!compiler) {
-    compiler = new ClangWorker();
-    compiler.postMessage({ init: new URL('clang/', document.baseURI).href });
-  }
+  compiler ??= new ClangWorker();
   return compiler;
 }
 

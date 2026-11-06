@@ -11,7 +11,7 @@ and the output is shared. Python backend, one instance per interview, in-memory 
   disconnects all candidates.
 - "Try it alone": a private sandbox without a password (own room, up to 20 at a time).
 - Shared Monaco editor with live cursors/selections; per-person Vim bindings, completion toggle and theme.
-- C, C++ (clang 22, C++26 by default, exceptions), Python 3.14 (Pyodide, numpy/pandas/pytest/… on import) and
+- C, C++ (clang 23, C++26 by default, exceptions), Python 3.14 (Pyodide, numpy/pandas/pytest/… on import) and
   TypeScript. Shared compiler flags, program arguments and stdin.
 - C/C++ catch UB at run time (UBSan, libc++ hardening) with source locations and backtraces.
 - Completion/hover: TypeScript (Monaco), Python (Jedi), C/C++ (clangd, optional build).
@@ -42,11 +42,12 @@ podman run --rm --read-only --cap-drop=all --security-opt=no-new-privileges \
 
 ### C/C++ compiler (clang)
 
-`tools/clang/build.sh` builds the in-browser Clang/LLD (LLVM 22.1.8) into `tools/clang/dist/package/`, which
+`tools/clang/build.sh` builds the in-browser Clang/LLD (LLVM 23.1.5) into `tools/clang/dist/package/`, which
 `web/package.json` depends on, so run it before `npm install` or `podman build`. It uses
-[YoWASP](https://github.com/YoWASP/clang)'s recipe with their WASI patch plus a fix (`tools/clang/wasi.patch`); the
-published `@yowasp/clang` package is an older LLVM 22 snapshot. ~20 min on 32 cores, ~6 GB in
-`~/.cache/interview-pad-yowasp` (reruns are incremental).
+[YoWASP](https://github.com/YoWASP/clang)'s recipe with their WASI patch, ported to LLVM 23, plus a fix
+(`tools/clang/wasi.patch`); the published `@yowasp/clang` package is LLVM 22. The bundled C/C++ sysroot (wasi-libc,
+libc++ with exceptions) is [wasi-sdk](https://github.com/WebAssembly/wasi-sdk) 34's `wasm32-wasip1-threads` one.
+~20 min on 32 cores, ~6 GB in `~/.cache/interview-pad-yowasp` (reruns are incremental).
 
 ### C/C++ IntelliSense (clangd)
 
@@ -93,7 +94,7 @@ MIT, see [LICENSE](LICENSE). Third-party notices are generated into `licenses.tx
 
 - stdin and arguments are given up front (Input tab); no interactive stdin. TS gets `process.argv` and `prompt()`.
 - Runs are killed after 10 s of execution (download and compile time don't count); output is capped at 64 KB.
-- C++ exceptions thrown inside the prebuilt libc++ (e.g. `std::stoi`) abort instead of being catchable.
+- C++ needs WebAssembly exception handling with `exnref` (current Chrome, Firefox and Safari).
 - No ASan. Null/out-of-bounds accesses that UBSan and hardening don't catch silently succeed (WASM memory).
 - TS: the program ends when the module finishes evaluating; pending timers are dropped.
 - Python: stdlib plus the packages listed in `web/scripts/pyodide.mjs`.

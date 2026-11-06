@@ -18,7 +18,7 @@ const CANCELLED = new Set([-32801, -32800]);
 
 const DOCS = /^file:\/\/\/main\.(c|cpp)$/; // Monaco's client syncs every model; keep Python/TS away from clangd
 // what the bundled clang uses (its resource tarball is mounted at /usr), so clangd sees the same headers
-const BASE = ['--target=wasm32-wasip1', '-resource-dir=/usr', '--sysroot=/usr'];
+const BASE = ['-resource-dir=/usr', '--sysroot=/usr']; // the target is in HIDDEN_FLAGS
 const COMPLETION = new Set(['textDocument/completion', 'textDocument/signatureHelp']);
 
 let port: MessagePort;
@@ -142,6 +142,7 @@ function untar(tar: Uint8Array, fs: FS, root: string) {
     longName = undefined;
     if (!str(off, 100)) break;
     if (type === 'L') longName = decoder.decode(data).replace(/\0.*$/s, '');
+    else if (type === '5' && name.startsWith('include/')) fs.mkdirTree(`${root}/${name}`); // e.g. c++/v1, the libc++ probe
     else if ((type === '0' || type === '\0') && name.startsWith('include/')) {
       const path = `${root}/${name}`;
       fs.mkdirTree(path.slice(0, path.lastIndexOf('/')));
