@@ -105,7 +105,8 @@ MIT, see [LICENSE](LICENSE). Third-party notices are generated into `licenses.tx
   `MAP_FIXED` or partial `munmap`.
 - C/C++ `clock()` measures wall time, `getpid()` is a placeholder, and signals come only from `raise()` (wasi-libc's
   emulations).
-- TS: the program ends when the module finishes evaluating; pending timers are dropped.
+- TS: as in Node, the program runs until no timers are pending; `process` has only `argv`, an empty `env`,
+  `exit`/`exitCode` and `stdout`/`stderr.write`.
 - TS: `fs`/`node:fs` is an in-memory subset (`readFileSync`, `writeFileSync`, `appendFileSync`, `existsSync`, `mkdirSync`,
   `readdirSync`, `rmSync`, `unlinkSync`); no other Node modules.
 - Python: stdlib plus the packages listed in `web/scripts/pyodide.mjs`.

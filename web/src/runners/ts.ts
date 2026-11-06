@@ -9,7 +9,17 @@ monaco.typescript.typescriptDefaults.setCompilerOptions({
   strict: true,
 });
 // provided by js.worker
-monaco.typescript.typescriptDefaults.addExtraLib('declare const process: { argv: string[] };', 'ts:runtime.d.ts');
+monaco.typescript.typescriptDefaults.addExtraLib(
+  `declare const process: {
+  argv: string[];
+  env: Record<string, string | undefined>;
+  exitCode?: number;
+  exit(code?: number): never;
+  stdout: { write(text: string): boolean };
+  stderr: { write(text: string): boolean };
+};`,
+  'ts:runtime.d.ts',
+);
 const NODE_FS = `{
   export function readFileSync(path: string): Uint8Array;
   export function readFileSync(path: string, options: string | { encoding: string }): string;

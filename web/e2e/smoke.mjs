@@ -174,6 +174,8 @@ try {
   await runCase(iv, cand, 'ts', 'throw new Error("boom")', 'Uncaught Error: boom');
   await runCase(iv, cand, 'ts', 'import { existsSync, readFileSync, writeFileSync } from "node:fs";\nconsole.log(existsSync("f.txt") ? "stale" : "fresh"); writeFileSync("f.txt", "filed"); console.log(readFileSync("f.txt", "utf8"));', 'fresh\nfiled');
   await runCase(iv, cand, 'ts', null, 'fresh\nfiled'); // a second run starts fresh
+  await runCase(iv, cand, 'ts', '(async () => { await new Promise((r) => setTimeout(r, 20)); console.log("after a timer"); process.exit(4); })(); console.table([{ a: 1 }]);', '(index) │ a\n0       │ 1\nafter a timer');
+  await iv.waitForFunction(() => document.querySelector('#run-status').textContent.startsWith('Exit 4'));
   // code the interviewer runs gets their cookie, but must not be able to act as them
   await runCase(iv, cand, 'ts', 'const r = await fetch(location.origin + "/api/pending"); console.log("api status", r.status)', 'api status 403');
 
